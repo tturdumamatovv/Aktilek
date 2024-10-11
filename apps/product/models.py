@@ -1,8 +1,6 @@
 import os
 from io import BytesIO
-
-from mptt.models import MPTTModel, TreeForeignKey
-from mptt.admin import DraggableMPTTAdmin
+from tabnanny import verbose
 
 from PIL import Image
 from colorfield.fields import ColorField
@@ -42,7 +40,7 @@ class Tag(models.Model):
         return self.name
 
 
-class Category(MPTTModel):
+class Category(models.Model):
     name = models.CharField(max_length=50, verbose_name=_('Название'))
     description = models.CharField(max_length=100, blank=True, verbose_name=_('Описание'))
     slug = models.SlugField(max_length=100, unique=True, verbose_name=_('Ссылка'), blank=True, null=True)
@@ -50,9 +48,6 @@ class Category(MPTTModel):
     order = models.PositiveIntegerField(default=0, editable=False, db_index=True)
     parent = models.ForeignKey('self', on_delete=models.CASCADE, related_name='subcategories',
                                verbose_name=_('Родительская категория'), blank=True, null=True)
-
-    class MPTTMeta:
-        order_insertion_by = ['name']
 
     class Meta:
         verbose_name = "Категория"

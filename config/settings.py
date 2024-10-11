@@ -54,8 +54,7 @@ THIRD_PARTY_APPS = [
     'colorfield',
     'adminsortable2',
     'channels',
-    'ckeditor',
-    'mptt'
+    'ckeditor'
 
 ]
 

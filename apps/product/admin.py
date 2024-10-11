@@ -2,7 +2,6 @@ from adminsortable2.admin import SortableAdminMixin
 from django.contrib import admin
 from modeltranslation.admin import TranslationAdmin
 from unfold.admin import TabularInline, ModelAdmin, StackedInline
-from mptt.admin import DraggableMPTTAdmin
 
 from .models import (
     Size,
@@ -67,15 +66,10 @@ class ReviewInline(TabularInline):
 
 
 @admin.register(Category)
-class CategoryAdmin(DraggableMPTTAdmin):
-    mptt_indent_field = "name"
-    list_display = ('tree_actions', 'indented_title', 'related_products_count', 'order')
-    list_display_links = ('indented_title',)
-
-    def related_products_count(self, instance):
-        return instance.product_set.count()
-
-    related_products_count.short_description = 'Количество товаров'
+class CategoryAdmin(SortableAdminMixin, ExcludeBaseFieldsMixin, TranslationAdmin):
+    list_display = ('name', 'description', 'order')
+    search_fields = ('name',)
+    exclude_base_fields = ('name', 'description')
 
 
 @admin.register(Product)
