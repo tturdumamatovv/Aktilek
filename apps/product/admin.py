@@ -68,7 +68,7 @@ class ReviewInline(TabularInline):
 
 
 @admin.register(Category)
-class CategoryAdmin(MPTTModelAdmin):
+class CategoryAdmin(ModelAdmin, MPTTModelAdmin):
     list_display = ('name', 'parent', 'order')
     search_fields = ('name',)
     prepopulated_fields = {'slug': ('name',)}  # автоматически генерируем слаг по названию
