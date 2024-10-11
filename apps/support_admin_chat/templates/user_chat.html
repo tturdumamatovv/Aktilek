@@ -1,0 +1,130 @@
+
+{% block content %}
+<div id="chat-app" style="max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9; border-radius: 10px;">
+    <h2 style="text-align: center; color: #333;">Чат с Администрацией</h2>
+    
+    <!-- Окно сообщений -->
+    <div id="chat-window" style="height: 400px; overflow-y: auto; padding: 10px; background-color: #fff; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 10px;">
+        <ul id="chat-messages" style="list-style-type: none; padding: 0; margin: 0;">
+            <!-- История сообщений -->
+            {% for message in chat_messages %}
+                <li style="margin-bottom: 10px; display: flex; {% if message.sender.id == request.user.id %} justify-content: flex-end; {% else %} justify-content: flex-start; {% endif %}">
+                    <div style="padding: 10px; border-radius: 10px; max-width: 60%; 
+                        {% if message.sender.id == request.user.id %}
+                            background-color: #007bff; color: #fff; text-align: right;
+                        {% else %}
+                            background-color: #f1f1f1; color: #333; text-align: left;
+                        {% endif %}
+                        box-shadow: 0 2px 6px rgba(0,0,0,0.1);"
+                    >
+                        <span style="font-size: 12px; font-weight: bold;">{{ message.sender.username }}</span>
+                        <p style="margin: 5px 0 0;">{{ message.message }}</p>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- Включение/отключение автопрокрутки -->
+    <div style="margin-bottom: 20px;">
+        <label for="auto-scroll-checkbox">
+            <input type="checkbox" id="auto-scroll-checkbox" checked> Автопрокрутка
+        </label>
+    </div>
+
+    <!-- Форма отправки сообщений -->
+    <div style="display: flex; margin-top: 20px;">
+        <input type="text" id="chat-message-input" placeholder="Введите ваше сообщение..." style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; margin-right: 10px;">
+        <button id="chat-message-submit" style="padding: 10px 20px; background-color: #007bff; color: #fff; border: none; border-radius: 5px; cursor: pointer;">Отправить</button>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const messageInput = document.getElementById('chat-message-input');
+    const messagesList = document.getElementById('chat-messages');
+    const messageSubmit = document.getElementById('chat-message-submit');
+    const autoScrollCheckbox = document.getElementById('auto-scroll-checkbox');
+    const chatWindow = document.getElementById('chat-window');
+    
+    // Получаем идентификатор комнаты из контекста Django
+    const roomId = "{{ chat_room.id }}";  // Убедитесь, что идентификатор комнаты передан правильно
+
+    // Открытие WebSocket соединения с корректным roomId
+    const ws = new WebSocket('ws://' + window.location.host + '/ws/chat/' + roomId + '/');
+
+    // Функция для создания HTML структуры сообщений
+    function createMessageElement(senderId, senderUsername, messageText) {
+        const messageItem = document.createElement('li');
+        messageItem.style.marginBottom = '10px';
+        messageItem.style.display = 'flex';
+        messageItem.style.justifyContent = (senderId == {{ request.user.id }}) ? 'flex-end' : 'flex-start';
+
+        const messageDiv = document.createElement('div');
+        messageDiv.style.padding = '10px';
+        messageDiv.style.borderRadius = '10px';
+        messageDiv.style.maxWidth = '60%';
+        messageDiv.style.boxShadow = '0 2px 6px rgba(0,0,0,0.1)';
+
+        if (senderId == {{ request.user.id }}) {
+            messageDiv.style.backgroundColor = '#007bff';
+            messageDiv.style.color = '#fff';
+            messageDiv.style.textAlign = 'right';
+        } else {
+            messageDiv.style.backgroundColor = '#f1f1f1';
+            messageDiv.style.color = '#333';
+            messageDiv.style.textAlign = 'left';
+        }
+
+        const senderElement = document.createElement('span');
+        senderElement.style.fontSize = '12px';
+        senderElement.style.fontWeight = 'bold';
+        senderElement.textContent = senderUsername;
+
+        const messageElement = document.createElement('p');
+        messageElement.style.margin = '5px 0 0';
+        messageElement.textContent = messageText;
+
+        messageDiv.appendChild(senderElement);
+        messageDiv.appendChild(messageElement);
+        messageItem.appendChild(messageDiv);
+
+        return messageItem;
+    }
+
+    // Функция для прокрутки вниз
+    function scrollToBottom() {
+        if (autoScrollCheckbox.checked) {
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+    }
+
+    // Прокрутка вниз при загрузке страницы (к последним сообщениям)
+    scrollToBottom();
+
+    // Получение нового сообщения из WebSocket
+    ws.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        const newMessage = createMessageElement(data.sender_id, data.sender_username, data.message);
+        messagesList.appendChild(newMessage);
+        scrollToBottom();  // Прокручиваем вниз при получении нового сообщения
+    };
+
+    // Отправка нового сообщения
+    messageSubmit.onclick = function(e) {
+        e.preventDefault();
+        const message = messageInput.value;
+        if (message.trim() !== '') {
+            ws.send(JSON.stringify({
+                'message': message,
+                'sender_id': {{ request.user.id }},
+                'sender_username': '{{ request.user.username }}'
+            }));
+            messageInput.value = '';
+            scrollToBottom();  // Прокручиваем вниз после отправки сообщения
+        }
+    };
+});
+</script>
+
+{% endblock %}

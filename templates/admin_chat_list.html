@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Чаты и заказы</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f0f2f5;
+        }
+        .chat-container, .orders-container {
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            height: 400px;
+            overflow-y: auto;
+        }
+        #chat-messages li {
+            margin-bottom: 10px;
+            background-color: #f1f1f1;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        #chat-messages li.user-message {
+            background-color: #007bff;
+            color: #ffffff;
+            text-align: right;
+        }
+        .list-group-item-action.active {
+            background-color: #007bff;
+            color: white;
+        }
+    </style>
+</head>
+<body class="container-fluid" data-user-id="{{ user.id }}" data-user-username="{{ user.username }}">
+<div class="row">
+    <!-- Первый столбец: Список чатов -->
+    <div class="col-md-3">
+        <h1 class="mt-5 text-center">Список чатов</h1>
+        <div class="list-group" id="chat-list">
+            {% for chat_item in chat_data %}
+                <a href="#" class="list-group-item list-group-item-action chat-link"
+                   data-room-id="{{ chat_item.chat.id }}"
+                   data-user-id="{{ chat_item.chat.user.id }}"
+                   data-user-username="{{ chat_item.chat.user.username }}">
+                    Чат {{ chat_item.chat.id }}: {{ chat_item.chat.user.phone_number }}
+                </a>
+            {% empty %}
+                <div class="text-center">Чаты отсутствуют</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Второй столбец: Окно чата -->
+    <div class="col-md-6">
+        <div id="chat-app"
+             style="display: none; max-width: 100%; margin: auto; padding: 20px; background-color: #f9f9f9; border-radius: 10px;">
+            <h2 id="chat-room-title" style="text-align: center; color: #333;"></h2>
+            <div id="chat-window"
+                 style="height: 400px; overflow-y: auto; padding: 10px; background-color: #fff; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 10px;">
+                <div id="loading-spinner" style="display: none; text-align: center; margin-top: 20px;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+                <ul id="chat-messages" style="list-style-type: none; padding: 0; margin: 0;"></ul>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label for="auto-scroll-checkbox">
+                    <input type="checkbox" id="auto-scroll-checkbox" checked> Автопрокрутка
+                </label>
+            </div>
+            <div style="display: flex; margin-top: 20px;">
+                <input type="text" id="chat-message-input" placeholder="Введите сообщение..."
+                       style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; margin-right: 10px;">
+                <button id="chat-message-submit"
+                        style="padding: 10px 20px; background-color: #007bff; color: #fff; border: none; border-radius: 5px; cursor: pointer;">
+                    Отправить
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Третий столбец: Заказы пользователя -->
+    <div class="col-md-3">
+        <div id="orders-list"  style="display: none; padding: 20px; background-color: #f9f9f9; border-radius: 10px; height: 600px">
+            <h4>Заказы пользователя:</h4>
+            <!-- Блок для спиннера -->
+            <div id="orders-loading" class="text-center" style="display: none;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Загрузка...</span>
+                </div>
+            </div>
+            <!-- Список заказов с ограниченной высотой и прокруткой -->
+            <ul id="orders" style="list-style-type: none; padding: 0; height: 500px; overflow-y: scroll;"></ul>
+        </div>
+    </div>
+</div>
+
+<!-- Подключение JavaScript -->
+<script src="{% static 'js/admin_chat.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+
+</body>
+</html>

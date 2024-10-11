@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Chat List</title>
+    <!-- Подключаем Bootstrap для стилей -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Дополнительные стили для улучшения внешнего вида таблицы */
+        table {
+            margin-top: 20px;
+            border-collapse: collapse;
+            width: 100%;
+            background-color: #f9f9f9;
+        }
+        table th, table td {
+            text-align: left;
+            padding: 12px;
+        }
+        table th {
+            background-color: #007bff;
+            color: #3b3b3b;
+        }
+        table tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        table tr:hover {
+            background-color: #ddd;
+        }
+        .chat-link {
+            text-decoration: none;
+            color: #007bff;
+        }
+        .chat-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body class="container">
+    <h1 class="mt-5 text-center">Список чатов</h1>
+
+    <!-- Таблица с улучшенным стилем -->
+    <table class="table table-bordered table-striped mt-4">
+        <thead>
+            <tr>
+                <th>ID чата</th>
+                <th>Юзер</th>
+                <th>Последнее сообщение</th>
+                <th>Непрочитанные сообщения</th>
+                <th>Дата последнего сообщения</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for chat_item in chat_data %}
+            <tr>
+                <td><a class="chat-link" href="{% url 'admin-chat' chat_item.chat.id %}">{{ chat_item.chat.id }}</a></td>
+                <td><a class="chat-link" href="{% url 'admin-chat' chat_item.chat.id %}">{{ chat_item.chat.user.phone_number }}</a></td>
+                <td>{{ chat_item.last_message.message|truncatewords:20 }}</td>
+                <td>{{ chat_item.unread_messages_count }}</td>
+                <td>{{ chat_item.last_message.timestamp|date:"d.m.Y H:i" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center">Чаты отсутствуют</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Подключение скриптов Bootstrap -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

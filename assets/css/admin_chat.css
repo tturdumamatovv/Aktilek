@@ -1,0 +1,85 @@
+/* Общие стили для страницы */
+body {
+    background-color: #f0f2f5;
+
+}
+
+/* Стилизация заголовка списка чатов */
+h1 {
+    color: #007bff;
+
+}
+
+/* Стили для списка чатов */
+.list-group-item {
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.list-group-item:hover {
+    background-color: #e9ecef;
+
+}
+
+/* Стилизация окна чата */
+#chat-app {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+
+}
+
+/* Стилизация окна сообщений */
+#chat-window {
+    background-color: #ffffff;
+}
+
+#chat-messages li {
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 5px;
+    background-color: #f1f1f1;
+    display: flex;
+
+}
+
+/* Стили для сообщений от пользователя */
+#chat-messages li.user-message {
+    background-color: #007bff;
+    color: #ffffff;
+    justify-content: flex-end;
+
+}
+
+/* Стили для инпута и кнопки отправки */
+#chat-message-input, #chat-message-submit {
+    height: 38px;
+    border: 1px solid #ccc;
+}
+
+#chat-message-submit {
+    background-color: #28a745;
+    color: white;
+    border-color: #28a745;
+
+}
+
+/* Адаптивность для малых экранов */
+@media (max-width: 768px) {
+    .col-md-3, .col-md-6 {
+        padding: 0;
+    }
+
+    #chat-app {
+        margin-top: 20px;
+    }
+}
+#chat-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100px; /* Высота блока */
+}
+
+#chat-loading .spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
