@@ -3,6 +3,8 @@ from django.contrib import admin
 from modeltranslation.admin import TranslationAdmin
 from unfold.admin import TabularInline, ModelAdmin, StackedInline
 
+from mptt.admin import MPTTModelAdmin
+
 from .models import (
     Size,
     Category,
@@ -66,10 +68,11 @@ class ReviewInline(TabularInline):
 
 
 @admin.register(Category)
-class CategoryAdmin(SortableAdminMixin, ExcludeBaseFieldsMixin, TranslationAdmin):
-    list_display = ('name', 'description', 'order')
+class CategoryAdmin(MPTTModelAdmin):
+    list_display = ('name', 'parent', 'order')
     search_fields = ('name',)
-    exclude_base_fields = ('name', 'description')
+    prepopulated_fields = {'slug': ('name',)}  # автоматически генерируем слаг по названию
+    mptt_level_indent = 20
 
 
 @admin.register(Product)
