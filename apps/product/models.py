@@ -1,7 +1,6 @@
 import os
 from io import BytesIO
-
-from mptt.models import MPTTModel, TreeForeignKey
+from tabnanny import verbose
 
 from PIL import Image
 from colorfield.fields import ColorField
@@ -41,27 +40,29 @@ class Tag(models.Model):
         return self.name
 
 
-class Category(MPTTModel):
+class Category(models.Model):
     name = models.CharField(max_length=50, verbose_name=_('Название'))
     description = models.CharField(max_length=100, blank=True, verbose_name=_('Описание'))
     slug = models.SlugField(max_length=100, unique=True, verbose_name=_('Ссылка'), blank=True, null=True)
     image = models.FileField(upload_to='category_photos/', verbose_name=_('Фото'), blank=True, null=True)
     order = models.PositiveIntegerField(default=0, editable=False, db_index=True)
-    parent = TreeForeignKey('self', on_delete=models.CASCADE, related_name='children',
-                            verbose_name=_('Родительская категория'), blank=True, null=True)
-
-    class MPTTMeta:
-        order_insertion_by = ['name']
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, related_name='subcategories',
+                               verbose_name=_('Родительская категория'), blank=True, null=True)
 
     class Meta:
         verbose_name = "Категория"
         verbose_name_plural = "Категории"
+        ordering = ['order']
 
     def __str__(self):
         return self.name
 
     def get_absolute_url(self):
         return f"/admin/product/category/{self.id}/change/"
+
+    def has_subcategories(self):
+        """Проверяет, есть ли у категории подкатегории."""
+        return self.subcategories.exists()
 
     def save(self, *args, **kwargs):
         if not self.slug:
