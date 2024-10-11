@@ -1,9 +1,11 @@
 from adminsortable2.admin import SortableAdminMixin
 from django.contrib import admin
+from django.utils.html import format_html
+
 from modeltranslation.admin import TranslationAdmin
 from unfold.admin import TabularInline, ModelAdmin, StackedInline
 
-from mptt.admin import MPTTModelAdmin
+from mptt.admin import DraggableMPTTAdmin
 
 from .models import (
     Size,
@@ -68,10 +70,18 @@ class ReviewInline(TabularInline):
 
 
 @admin.register(Category)
-class CategoryAdmin(ModelAdmin, MPTTModelAdmin):
-    list_display = ('name', 'parent', 'order')
+class CategoryAdmin(ModelAdmin, DraggableMPTTAdmin, ExcludeBaseFieldsMixin):
     search_fields = ('name',)
-    prepopulated_fields = {'slug': ('name',)}  # автоматически генерируем слаг по названию
+    exclude_base_fields = ('name', 'description')
+    def indented_title(self, obj):
+        return format_html(
+            '<div style="text-indent:{}px;">{}</div>',
+            obj.level * 20,  # Увеличивайте значение для большего отступа
+            obj.name
+        )
+    indented_title.short_description = 'Название'
+
+    list_display = ('tree_actions', 'indented_title',)
     mptt_level_indent = 20
 
 
