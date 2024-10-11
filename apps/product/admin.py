@@ -89,7 +89,7 @@ class CategoryAdmin(ModelAdmin, DraggableMPTTAdmin, TabbedTranslationAdmin):
 
 
 @admin.register(Product)
-class ProductAdmin(SortableAdminMixin, ExcludeBaseFieldsMixin, TranslationAdmin):
+class ProductAdmin(ModelAdmin ,SortableAdminMixin, ExcludeBaseFieldsMixin, TranslationAdmin):
     form = ProductAdminForm
     list_display = ('order', 'name', 'category', 'description')
     search_fields = ('name',)
