@@ -83,7 +83,7 @@ class CategoryAdmin(DraggableMPTTAdmin, TabbedTranslationAdmin):
         )
     indented_title.short_description = 'Название'
 
-    list_display = ('tree_actions', 'indented_title', 'order', 'is_active')
+    list_display = ('tree_actions', 'indented_title', 'order',)
     list_filter = ('parent', 'name')
     mptt_level_indent = 20
 
