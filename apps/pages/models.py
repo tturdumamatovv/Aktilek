@@ -99,7 +99,7 @@ class MethodsOfPayment(models.Model):
 
 class StaticPage(models.Model):
     title = models.CharField(max_length=255, verbose_name=_("Заголовок"))
-    description = models.TextField(verbose_name=_("Описание"))
+    description = RichTextField(verbose_name=_("Описание"))
     slug = models.SlugField(unique=True, verbose_name=_("Слаг"), blank=True, null=True)
     image = models.FileField(verbose_name=_("Изображение"), upload_to="images/static", blank=True, null=True)
     meta_title = models.CharField(max_length=255, verbose_name=_("Мета заголовок"), blank=True, null=True)

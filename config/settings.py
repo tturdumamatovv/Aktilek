@@ -142,8 +142,7 @@ LANGUAGE_CODE = 'ru'
 LANGUAGES = (
     ('ru', _('Russian')),
     ('en', _('English')),
-    ('ky', _('Kyrgyz')),
-    ('kk', _('Kazakh')),
+    ('ky', _('Kyrgyz'))
 )
 
 MODELTRANSLATION_DEFAULT_LANGUAGE = 'ru'
