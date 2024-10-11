@@ -1,7 +1,11 @@
 from adminsortable2.admin import SortableAdminMixin
 from django.contrib import admin
 from modeltranslation.admin import TranslationAdmin
-from unfold.admin import TabularInline, ModelAdmin, StackedInline
+from unfold.admin import TabularInline, ModelAdmin
+
+from mptt.admin import DraggableMPTTAdmin
+from django.utils.html import format_html
+from modeltranslation.admin import TabbedTranslationAdmin
 
 from .models import (
     Size,
@@ -65,11 +69,23 @@ class ReviewInline(TabularInline):
     extra = 0
 
 
+
 @admin.register(Category)
-class CategoryAdmin(SortableAdminMixin, ExcludeBaseFieldsMixin, TranslationAdmin):
-    list_display = ('name', 'description', 'order')
+class CategoryAdmin(DraggableMPTTAdmin, TabbedTranslationAdmin):
     search_fields = ('name',)
     exclude_base_fields = ('name', 'description')
+
+    def indented_title(self, obj):
+        return format_html(
+            '<div style="text-indent:{}px;">{}</div>',
+            obj.level * 20,  # Увеличивайте значение для большего отступа
+            obj.name
+        )
+    indented_title.short_description = 'Название'
+
+    list_display = ('tree_actions', 'indented_title', 'order', 'is_active')
+    list_filter = ('parent', 'name')
+    mptt_level_indent = 20
 
 
 @admin.register(Product)
