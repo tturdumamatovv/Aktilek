@@ -24,7 +24,10 @@ from .models import (
     FormCategory,
     Ornament,
     FormColor,
-    OrderRequest
+    OrderRequest,
+    ProductImage,
+    Country,
+    Gender
 )
 from .forms import ProductSizeForm, ProductAdminForm
 
@@ -40,10 +43,29 @@ class ExcludeBaseFieldsMixin(ModelAdmin):
 
 
 @admin.register(Size)
-class SizeAdmin(ExcludeBaseFieldsMixin, TranslationAdmin):
-    list_display = ('name', 'description')
+class SizeAdmin(ExcludeBaseFieldsMixin):
+    list_display = ('name',)
     search_fields = ('name',)
-    exclude_base_fields = ('name', 'description')
+
+
+@admin.register(Gender)
+class GenderAdmin(ExcludeBaseFieldsMixin):
+    list_display = ('name',)
+    search_fields = ('name',)
+    exclude_base_fields = ('name',)
+
+
+class ProductImageInline(TabularInline):
+    model = ProductImage
+    extra = 0
+
+
+@admin.register(Color)
+class ColorAdmin(ExcludeBaseFieldsMixin, TranslationAdmin):
+    list_display = ('name', 'hex_code')
+    search_fields = ('name',)
+    exclude_base_fields = ('name',)
+    inlines = [ProductImageInline]
 
 
 @admin.register(Tag)
@@ -57,11 +79,13 @@ class ProductSizeInline(TabularInline):
     model = ProductSize
     form = ProductSizeForm
     extra = 0
+    filter_horizontal = ['sizes']
 
 
 class CharacteristicInline(TabularInline):
     model = Characteristic
     extra = 0
+    exclude = ['name', 'value']
 
 
 class ReviewInline(TabularInline):
@@ -94,7 +118,7 @@ class ProductAdmin(SortableAdminMixin, ExcludeBaseFieldsMixin, TranslationAdmin)
     list_display = ('order', 'name', 'category', 'description')
     search_fields = ('name',)
     list_filter = ('category',)
-    filter_horizontal = ('toppings', 'tags',)  # 'ingredients')
+    filter_horizontal = ('tags',)  # 'ingredients')
     inlines = [ProductSizeInline, CharacteristicInline, ReviewInline]
     exclude_base_fields = ('name', 'description')
 
@@ -102,6 +126,13 @@ class ProductAdmin(SortableAdminMixin, ExcludeBaseFieldsMixin, TranslationAdmin)
 @admin.register(Topping)
 class ToppingAdmin(ExcludeBaseFieldsMixin, TranslationAdmin):
     list_display = ('name', 'price')
+    search_fields = ('name',)
+    exclude_base_fields = ('name',)
+
+
+@admin.register(Country)
+class ToppingAdmin(ExcludeBaseFieldsMixin, TranslationAdmin):
+    list_display = ('name', 'logo')
     search_fields = ('name',)
     exclude_base_fields = ('name',)
 

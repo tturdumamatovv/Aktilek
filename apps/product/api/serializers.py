@@ -18,7 +18,9 @@ from apps.product.models import (
     FormCategory,
     Attribute,
     AttributeField,
-    OrderRequest
+    OrderRequest,
+    ProductImage,
+    Size
 )
 
 
@@ -44,21 +46,40 @@ class TagSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'text_color', 'background_color']
 
 
+class ProductImageSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProductImage
+        fields = ['image', 'color']
+
+    def get_image(self, obj):
+        request = self.context.get('request')
+        image_url = obj.image.url
+        if request is not None:
+            return request.build_absolute_uri(image_url)
+        return image_url
+
+
+class SizeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Size
+        fields = ['id', 'name']
+
+
 class ProductSizeSerializer(serializers.ModelSerializer):
-    size = serializers.StringRelatedField()
-    colors = ColorSerializer(many=True)
+    color = ColorSerializer()
+    sizes = SizeSerializer(many=True)
+    images = ProductImageSerializer(many=True, source='color.color_images')
 
     class Meta:
         model = ProductSize
-        fields = ['id', 'size', 'price', 'discounted_price', 'bonus_price', 'colors']
+        fields = ['id', 'color', 'images', 'sizes']
 
-    def to_representation(self, instance):
-        representation = super().to_representation(instance)
-        representation['bonus_price'] = float(representation['bonus_price'])
-        representation['price'] = float(representation['price'])
-        representation['discounted_price'] = float(representation['discounted_price']) if representation[
-                                                                                              'discounted_price'] is not None else None
-        return representation
+    def get_images(self, obj):
+        # Получаем изображения, связанные с цветом
+        images = ProductImage.objects.filter(color=obj.color)
+        return ProductImageSerializer(images, many=True).data
 
 
 class ReviewSerializer(serializers.ModelSerializer):
@@ -74,37 +95,24 @@ class CharacteristicSerializer(serializers.ModelSerializer):
 
 
 class ProductSerializer(serializers.ModelSerializer):
-    # ingredients = IngredientSerializer(many=True)
-    toppings = ToppingSerializer(many=True)
     tags = TagSerializer(many=True)
-    product_sizes = ProductSizeSerializer(many=True)
-    min_price = serializers.SerializerMethodField()
-    bonus_price = serializers.SerializerMethodField()
     category_slug = serializers.SerializerMethodField()
     category_name = serializers.SerializerMethodField()
     is_favorite = serializers.SerializerMethodField()
     average_rating = serializers.SerializerMethodField()
-    reviews = ReviewSerializer(many=True, read_only=True, source='product_reviews')
-    characteristics = CharacteristicSerializer(many=True, read_only=True, source='product_characteristics')
+    photo = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
-        fields = ['id', 'name', 'description', 'photo', 'tags', 'toppings',
-                  'min_price', 'bonus_price', 'bonuses','product_sizes',
-                  'category_slug', 'category_name', 'is_favorite', 'gender',
-                  'reviews', 'characteristics', 'average_rating']
+        fields = ['id', 'name', 'description', 'photo', 'tags',
+                  'price', 'discounted_price',
+                  'category_slug', 'category_name', 'is_favorite', 'average_rating']
 
-    def get_min_price(self, obj):
-        return obj.get_min_price()
-
-    def get_bonus_price(self, obj):
-        # Логика для вычисления bonus_price
-        # Предположим, что bonus_price - это минимальная бонусная цена среди всех размеров продукта
-        min_bonus_price = None
-        for size in obj.product_sizes.all():
-            if min_bonus_price is None or size.bonus_price < min_bonus_price:
-                min_bonus_price = size.bonus_price
-        return min_bonus_price
+    def get_photo(self, obj):
+        request = self.context.get('request')
+        if obj.photo and request:
+            return request.build_absolute_uri(obj.photo.url)
+        return None
 
     def get_category_slug(self, obj):
         if obj.category:
@@ -112,7 +120,6 @@ class ProductSerializer(serializers.ModelSerializer):
         return None
 
     def get_category_name(self, obj):
-        # Проверяем, существует ли категория у продукта
         if obj.category:
             return obj.category.name
         return None
@@ -127,7 +134,46 @@ class ProductSerializer(serializers.ModelSerializer):
         return False
 
     def get_average_rating(self, obj):
-        # Вычисляем средний рейтинг
+        return round(obj.product_reviews.aggregate(Avg('rating'))['rating__avg'] or 0)
+
+
+class ProductDetailSerializer(serializers.ModelSerializer):
+    tags = TagSerializer(many=True)
+    product_sizes = ProductSizeSerializer(many=True, read_only=True)
+    category_slug = serializers.SerializerMethodField()
+    category_name = serializers.SerializerMethodField()
+    is_favorite = serializers.SerializerMethodField()
+    average_rating = serializers.SerializerMethodField()
+    reviews = ReviewSerializer(many=True, read_only=True, source='product_reviews')  # Предположим, что ReviewSerializer уже существует
+    characteristics = CharacteristicSerializer(many=True, read_only=True, source='product_characteristics')  # Предположим, что CharacteristicSerializer уже существует
+
+    class Meta:
+        model = Product
+        fields = ['id', 'name', 'description', 'photo', 'tags',
+                  'price', 'discounted_price', 'product_sizes',
+                  'category_slug', 'category_name', 'is_favorite',
+                  'reviews', 'characteristics', 'average_rating']
+
+    def get_category_slug(self, obj):
+        if obj.category:
+            return obj.category.slug
+        return None
+
+    def get_category_name(self, obj):
+        if obj.category:
+            return obj.category.name
+        return None
+
+    def get_is_favorite(self, obj):
+        request = self.context.get('request', None)
+        if request is None or not hasattr(request, 'user'):
+            return False
+        user = request.user
+        if user.is_authenticated:
+            return FavoriteProduct.objects.filter(user=user, product=obj).exists()
+        return False
+
+    def get_average_rating(self, obj):
         return round(obj.product_reviews.aggregate(Avg('rating'))['rating__avg'] or 0)
 
 
@@ -182,22 +228,46 @@ class ComboProductSerializer(serializers.ModelSerializer):
 class CategoryProductSerializer(serializers.ModelSerializer):
     products = ProductSerializer(many=True, read_only=True)
     subcategories = serializers.SerializerMethodField()
+    image = serializers.SerializerMethodField()
     # sets = SetSerializer(many=True, read_only=True)
 
     class Meta:
         model = Category
         fields = ['id', 'name', 'description', 'slug', 'image', 'products', 'subcategories']  # 'sets']
 
+    def get_image(self, obj):
+        request = self.context.get('request')
+        if obj.image and request:
+            return request.build_absolute_uri(obj.image.url)
+        return None
+
     def get_subcategories(self, obj):
         # Рекурсивно сериализуем подкатегории
         subcategories = obj.subcategories.all()
-        return CategoryProductSerializer(subcategories, many=True).data
+        serializer = CategoryProductSerializer(subcategories, many=True, context=self.context)
+        return serializer.data
 
 
 class CategoryOnlySerializer(serializers.ModelSerializer):
+    subcategories = serializers.SerializerMethodField()
+    image = serializers.SerializerMethodField()  # Обрабатываем URL для изображения
+
     class Meta:
         model = Category
-        fields = ['id', 'name', 'description', 'slug', 'image', ]
+        fields = ['id', 'name', 'description', 'slug', 'image', 'subcategories']
+
+    def get_subcategories(self, obj):
+        # Рекурсивно сериализуем подкатегории
+        subcategories = obj.subcategories.all()
+        if subcategories.exists():
+            return CategoryOnlySerializer(subcategories, many=True, context=self.context).data
+        return []
+
+    def get_image(self, obj):
+        request = self.context.get('request')
+        if obj.image and request:
+            return request.build_absolute_uri(obj.image.url)
+        return None
 
 
 class ProductSizeWithBonusSerializer(serializers.ModelSerializer):
@@ -206,17 +276,9 @@ class ProductSizeWithBonusSerializer(serializers.ModelSerializer):
     product_photo = serializers.ImageField(source='product.photo')
     size = serializers.CharField(source='size.name')
 
-    def get_bonus_price(self, obj):
-        return obj.bonus_price
-
-    def to_representation(self, instance):
-        representation = super().to_representation(instance)
-        representation['bonus_price'] = float(representation['bonus_price'])
-        return representation
-
     class Meta:
         model = ProductSize
-        fields = ['product_name', 'product_description', 'product_photo', 'size', 'id', 'bonus_price',]
+        fields = ['product_name', 'product_description', 'product_photo', 'size', 'id']
 
 
 class ProductSizeIdListSerializer(serializers.Serializer):

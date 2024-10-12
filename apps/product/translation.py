@@ -3,21 +3,39 @@ from .models import (
     Category,
     Product,
     Topping,
-    Size,
     Tag,
     Attribute,
     AttributeField,
-    FormVariant,
     Color,
     FormCategory,
     Form,
-    Ornament, FormColor
+    Ornament,
+    FormColor,
+    Country,
+    Gender,
+    Characteristic
 )  # Set,Ingredient
 
 
 @register(Category)
 class CategoryTranslationOptions(TranslationOptions):
     fields = ('name', 'description')
+
+
+@register(Characteristic)
+class CategoryTranslationOptions(TranslationOptions):
+    fields = ('name', 'value')
+
+
+@register(Country)
+class CountryTranslationOptions(TranslationOptions):
+    fields = ('name',)
+
+
+@register(Gender)
+class GenderTranslationOptions(TranslationOptions):
+    fields = ('name',)
+
 
 
 @register(Product)
@@ -28,11 +46,6 @@ class ProductTranslationOptions(TranslationOptions):
 @register(Topping)
 class ToppingTranslationOptions(TranslationOptions):
     fields = ('name',)
-
-
-@register(Size)
-class SizeTranslationOptions(TranslationOptions):
-    fields = ('name', 'description')
 
 
 @register(Tag)

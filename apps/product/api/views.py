@@ -13,12 +13,14 @@ from apps.product.api.serializers import (
     CategoryProductSerializer,
     CategoryOnlySerializer,
     ProductSizeWithBonusSerializer,
+    ProductSizeSerializer,
     ProductSizeIdListSerializer,
     FavoriteProduct,
     ReviewCreateSerializer,
     FormCategorySerializer,
     FormVariantCreateSerializer,
-    OrderRequestSerializer
+    OrderRequestSerializer,
+    ProductDetailSerializer
 )
 from apps.product.models import (
     Category,
@@ -42,12 +44,21 @@ class ProductSearchView(generics.ListAPIView):
         return queryset
 
 
+class ProductDetailView(generics.RetrieveAPIView):
+    queryset = Product.objects.all()
+    serializer_class = ProductDetailSerializer
+    lookup_field = 'id'
+
+    def get_serializer_context(self):
+        # Добавляем request в контекст для сериализатора
+        return {'request': self.request}
+
+
 class ProductBonusView(generics.ListAPIView):
     queryset = ProductSize.objects.filter(
         product__bonuses=True,
-        bonus_price__gt=0
     )
-    serializer_class =  ProductSizeWithBonusSerializer
+    serializer_class =  ProductSizeSerializer
 
 
 class ProductListByCategorySlugView(generics.ListAPIView):
@@ -88,7 +99,8 @@ class CategoryOnlyListView(generics.ListAPIView):
     serializer_class = CategoryOnlySerializer
 
     def get(self, request, *args, **kwargs):
-        categories = Category.objects.all()
+        # Получаем только родительские категории (категории верхнего уровня)
+        categories = Category.objects.filter(parent__isnull=True)
         serializer = CategoryOnlySerializer(categories, many=True, context={'request': request})
         return Response(serializer.data)
 
@@ -117,10 +129,10 @@ class CheckProductSizes(APIView):
             response_data = {}
 
             for size in sizes:
-                # Добавляем ID размера и актуальную цену в ответ
-                response_data[size.id] = size.get_price() or None
+                # Здесь убрали логику, связанную с ценами
+                response_data[size.id] = size.id
 
-            # Добавляем те ID размеров, которые не были найдены в базе данных, со значением None
+            # Добавляем те ID размеров, которые не были найдены в базе данных
             missing_sizes = set(size_ids) - set(response_data.keys())
             response_data.update({size_id: None for size_id in missing_sizes})
 

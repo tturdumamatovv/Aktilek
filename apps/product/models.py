@@ -18,7 +18,6 @@ from apps.authentication.models import User
 
 class Size(models.Model):
     name = models.CharField(max_length=50, verbose_name=_('Название'))
-    description = models.CharField(max_length=100, blank=True, verbose_name=_('Описание'))
 
     class Meta:
         verbose_name = "Размер"
@@ -75,12 +74,6 @@ class Category(MPTTModel):
 
 
 class Product(models.Model):
-    GENDER_CHOICES = (
-        ('M', 'Мужчинам'),
-        ('F', 'Женщинам'),
-        ('C', 'Детям'),
-        ('A', 'Животным'),
-    )
     is_popular = models.BooleanField(default=False, verbose_name=_('Популярный'))
     is_new = models.BooleanField(default=False, verbose_name=_('Новинка'))
     category = models.ForeignKey(Category, on_delete=models.CASCADE, verbose_name=_('Категория'),
@@ -88,12 +81,14 @@ class Product(models.Model):
     name = models.CharField(max_length=100, verbose_name=_('Название'))
     description = models.TextField(verbose_name=_('Описание'), blank=True, null=True)
     photo = models.FileField(upload_to='product_photos/', verbose_name=_('Фото'), blank=True, null=True)
-    toppings = models.ManyToManyField('Topping', related_name='products', verbose_name=_('Добавки'), blank=True)
+    country = models.ForeignKey('Country', related_name='products', verbose_name=_('Страна'), blank=True, on_delete=models.CASCADE)
     bonuses = models.BooleanField(default=False, verbose_name=_('Можно оптатить бонусами'))
     tags = models.ManyToManyField('Tag', related_name='products', verbose_name=_('Теги'), blank=True)
     order = models.PositiveIntegerField(default=0, editable=False, db_index=True)
-    country = models.CharField(max_length=255, verbose_name=_("Страна"), blank=True, null=True)
-    gender = models.CharField(max_length=1, choices=GENDER_CHOICES, verbose_name=_('Пол'), blank=True, null=True)
+    gender = models.ForeignKey('Gender', related_name='products', verbose_name=_('Пол'), on_delete=models.CASCADE)
+    price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name=_('Цена'))
+    discounted_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name=_('Цена со скидкой'),
+                                           blank=True, null=True)
 
     class Meta:
         verbose_name = "Продукт"
@@ -105,10 +100,6 @@ class Product(models.Model):
 
     def get_absolute_url(self):
         return f"/admin/product/product/{self.id}/change/"
-
-    def get_min_price(self):
-        prices = [size.discounted_price if size.discounted_price else size.price for size in self.product_sizes.all()]
-        return min(prices) if prices else None
 
     def process_and_save_image(self):
         """ Обрабатывает и сохраняет изображение, преобразуя его в формат .webp и изменяя размер, и удаляет старое изображение если нужно """
@@ -155,29 +146,53 @@ class Product(models.Model):
         super().save(*args, **kwargs)
 
 
+class Color(models.Model):
+    name = models.CharField(max_length=50, verbose_name=_('Цвет'))
+    hex_code = ColorField(default='#FFFFFF', format='hex', verbose_name=_('HEX Код'))
+
+    class Meta:
+        verbose_name = "Цвет"
+        verbose_name_plural = "Цвета"
+
+    def __str__(self):
+        return self.name
+
+
 class ProductSize(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='product_sizes',
                                 verbose_name=_('Продукт'))
-    size = models.ForeignKey(Size, on_delete=models.CASCADE, related_name='product_sizes', verbose_name=_('Размер'))
-    price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name=_('Цена'))
-    discounted_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name=_('Цена со скидкой'),
-                                           blank=True, null=True)
-    bonus_price = models.DecimalField(default=0, max_digits=10, decimal_places=2, verbose_name=_('Цена бонусами'))
-    colors = models.ManyToManyField('Color', related_name='product_sizes', verbose_name=_('Цвета'))
+    color = models.ForeignKey(Color, on_delete=models.CASCADE, related_name='product_colors', verbose_name=_('Цвета'))
+    sizes = models.ManyToManyField(Size, related_name='product_sizes', verbose_name=_('Размеры'))
 
     class Meta:
         verbose_name = "Цена продукта по размеру"
         verbose_name_plural = "Цены продуктов по размерам"
 
-    def get_price(self):
-        return self.discounted_price if self.discounted_price else self.price
+    def __str__(self):
+        return f"{self.product.name}"
 
-    def get_images_for_color(self, color):
-        """Получает изображения для данного размера продукта по указанному цвету."""
-        return self.images.filter(color=color)
+
+class Country(models.Model):
+    name = models.CharField(max_length=255, verbose_name='Страна')
+    logo = models.FileField(upload_to='countries', verbose_name='Флаг Страны')
+
+    class Meta:
+        verbose_name = "Страна"
+        verbose_name_plural = "Страны"
 
     def __str__(self):
-        return f"{self.product.name} - {self.size.name} - {self.get_price()}"
+        return f"{self.name}"
+
+
+class Gender(models.Model):
+    name = models.CharField(max_length=255, verbose_name='Гендер')
+
+    class Meta:
+        verbose_name = "Пол"
+        verbose_name_plural = "Пол"
+
+    def __str__(self):
+        return f"{self.name}"
 
 
 class Topping(models.Model):
@@ -212,9 +227,6 @@ class Set(models.Model):
     def __str__(self):
         return self.name
 
-    def get_price(self):
-        return self.discounted_price if self.discounted_price else self.price
-
 
 class Ingredient(models.Model):
     name = models.CharField(max_length=100, verbose_name=_('Название'))
@@ -242,20 +254,7 @@ class FavoriteProduct(models.Model):
         return f"{self.user} - {self.product}"
 
 
-class Color(models.Model):
-    name = models.CharField(max_length=50, verbose_name=_('Цвет'))
-    hex_code = ColorField(default='#FFFFFF', format='hex', verbose_name=_('HEX Код'))
-
-    class Meta:
-        verbose_name = "Цвет"
-        verbose_name_plural = "Цвета"
-
-    def __str__(self):
-        return self.name
-
-
 class ProductImage(models.Model):
-    product_size = models.ForeignKey(ProductSize, on_delete=models.CASCADE, related_name='images', verbose_name=_('Размер продукта'))
     color = models.ForeignKey(Color, on_delete=models.CASCADE, related_name='color_images', verbose_name=_('Цвет'))
     image = models.FileField(upload_to='product_images/', verbose_name=_('Изображение'))
 
@@ -264,7 +263,7 @@ class ProductImage(models.Model):
         verbose_name_plural = "Изображения продуктов"
 
     def __str__(self):
-        return f"{self.product_size.product.name} - {self.color.name}"
+        return f"{self.color.name}"
 
     def process_and_save_image(self):
         """Обрабатывает и сохраняет изображение, преобразуя его в формат .webp и изменяя размер."""

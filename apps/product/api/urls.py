@@ -14,7 +14,8 @@ from apps.product.api.views import (
     CreateReviewView,
     FormCategoryDetailView,
     FormVariantCreateView,
-    OrderRequestCreateView
+    OrderRequestCreateView,
+    ProductDetailView
 )
 
 urlpatterns = [
@@ -31,7 +32,6 @@ urlpatterns = [
           path('reviews/create/', CreateReviewView.as_view(), name='create-review'),
           path('form/<slug:slug>/', FormCategoryDetailView.as_view(), name='form-category-detail'),
           path('form-variants/', FormVariantCreateView.as_view(), name='form-variant-create'),
-          path('order-request/', OrderRequestCreateView.as_view(), name='order-request')
+          path('order-request/', OrderRequestCreateView.as_view(), name='order-request'),
+          path('product/<int:id>/', ProductDetailView.as_view(), name='product-detail'),
 ]
-
-
