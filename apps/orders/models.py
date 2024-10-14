@@ -95,6 +95,9 @@ class OrderItem(models.Model):
     product_size = models.ForeignKey(ProductSize, on_delete=models.CASCADE, verbose_name=_('Размер продукта'),
                                      blank=True, null=True)
     size_id = models.IntegerField(verbose_name=_('Выбранный размер'), blank=True, null=True)
+    size_name = models.CharField(max_length=255, verbose_name=_('Размер'), blank=True, null=True)
+    color_id = models.IntegerField(verbose_name=_('Выбранный цвет'), blank=True, null=True)
+    color_name = models.CharField(max_length=100, verbose_name=_('Название цвета'), blank=True, null=True)
     quantity = models.PositiveIntegerField(verbose_name=_('Количество'))
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name=_('Общая сумма'))
     is_bonus = models.BooleanField(default=False, verbose_name=_('Бонусный продукт'))
@@ -104,17 +107,23 @@ class OrderItem(models.Model):
         verbose_name_plural = _("Элементы заказа")
 
     def __str__(self):
-        size_name = None
-        try:
-            # Попытка получить объект размера по его id
-            size = Size.objects.get(id=self.size_id)
-            size_name = size.name
-        except Size.DoesNotExist:
-            size_name = "Размер не найден"
-
         if self.product_size:
-            return f"{self.product_size.product.name} - {size_name} - {self.quantity} шт."
-        return f"Товар - {size_name} - {self.quantity} шт."
+            return f"{self.product_size.product.name} - {self.size_name if self.size_name else 'Размер не указан'} - {self.quantity} шт."
+        return f"Товар - {self.size_name if self.size_name else 'Размер не указан'} - {self.quantity} шт."
+
+    def save(self, *args, **kwargs):
+        # Проверяем, есть ли size_id, и сохраняем название размера
+        if self.size_id:
+            try:
+                size = Size.objects.get(id=self.size_id)
+                self.size_name = size.name  # Сохраняем название размера в поле size_name
+            except Size.DoesNotExist:
+                self.size_name = "Размер не найден"
+        else:
+            self.size_name = "Размер не указан"  # На случай отсутствия size_id
+
+        # Вызываем родительский метод save
+        super().save(*args, **kwargs)
 
     def calculate_total_amount(self):
         if not self.is_bonus:

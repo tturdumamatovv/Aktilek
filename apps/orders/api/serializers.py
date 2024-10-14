@@ -8,7 +8,7 @@ from apps.orders.models import (
     Report,
     PromoCode
 )
-from apps.product.models import ProductSize, Product, Size, Topping
+from apps.product.models import ProductSize, Product, Size, Topping, Color
 from django.utils.translation import gettext_lazy as _
 
 
@@ -167,8 +167,31 @@ class OrderSerializer(serializers.ModelSerializer):
 
             # Добавляем продукты в заказ
             for product_data in products_data:
-                order_item = OrderItem(order=order, product_size_id=product_data['product_size_id'], size_id=product_data['size_id'],
-                                       quantity=product_data['quantity'], is_bonus=product_data['is_bonus'])
+                # Получаем имя размера по его id
+                try:
+                    size = Size.objects.get(id=product_data['size_id'])
+                    size_name = size.name  # Получаем имя размера
+                except Size.DoesNotExist:
+                    size_name = "Размер не найден"
+
+                # Получаем имя цвета по его id
+                try:
+                    color = Color.objects.get(id=product_data['color_id'])
+                    color_name = color.name  # Получаем имя цвета
+                except Color.DoesNotExist:
+                    color_name = "Цвет не найден"
+
+                # Создаем OrderItem и сохраняем его с именами размера и цвета
+                order_item = OrderItem(
+                    order=order,
+                    product_size_id=product_data['product_size_id'],
+                    size_id=product_data['size_id'],
+                    size_name=size_name,  # Сохраняем имя размера
+                    color_id=product_data['color_id'],
+                    color_name=color_name,  # Сохраняем имя цвета
+                    quantity=product_data['quantity'],
+                    is_bonus=product_data['is_bonus']
+                )
                 order_item.save()
 
         return order

@@ -17,6 +17,8 @@ from apps.services.generate_message import generate_order_message
 class OrderItemInline(TabularInline):
     model = OrderItem
     extra = 0
+    exclude = ['size_id', 'color_id']
+    readonly_fields = ['product_size', 'size_name', 'color_name', 'quantity', 'total_amount', 'is_bonus']
 
 
 @admin.register(Order)
