@@ -70,13 +70,15 @@ class SizeSerializer(serializers.ModelSerializer):
 
 
 class ProductSizeSerializer(serializers.ModelSerializer):
-    color = ColorSerializer()
+    color_id = serializers.IntegerField(source='color.id')
+    color_name = serializers.CharField(source='color.name')
+    color_hex_code = serializers.CharField(source='color.hex_code')
     sizes = SizeSerializer(many=True)
     images = ProductImageSerializer(many=True, source='color.color_images')
 
     class Meta:
         model = ProductSize
-        fields = ['id', 'color', 'images', 'sizes']
+        fields = ['id', 'color_id', 'color_name', 'color_hex_code', 'images', 'sizes']
 
     def get_images(self, obj):
         # Получаем изображения, связанные с цветом
