@@ -1,22 +1,15 @@
 import pytz
-
 from django.db import transaction
 from django.conf import settings
-
 from rest_framework import serializers
-
-from apps.authentication.models import UserAddress
 from apps.orders.models import (
     Order,
     OrderItem,
-    Delivery,
-    Topping,
-    Restaurant,
     Report,
-    TelegramBotToken, PromoCode
-
-)  # Ingredient)
-from apps.product.models import ProductSize, Product, Size
+    PromoCode
+)
+from apps.product.models import ProductSize, Product, Size, Topping
+from django.utils.translation import gettext_lazy as _
 
 
 class ToppingSerializer(serializers.ModelSerializer):
@@ -27,74 +20,51 @@ class ToppingSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'price']
 
 
-class RestaurantSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Restaurant
-        fields = ['id', 'name', 'address', 'phone_number', 'email', 'opening_hours', 'closing_hours',
-                  'latitude', 'longitude', 'self_pickup_available']
-
-
 class ProductOrderItemSerializer(serializers.ModelSerializer):
     product = serializers.SerializerMethodField(read_only=True)
     product_size_id = serializers.IntegerField(write_only=True)
-    topping_ids = serializers.ListField(child=serializers.IntegerField(), write_only=True, required=False)
-    quantity = serializers.IntegerField(default=0)
+    color_id = serializers.IntegerField(write_only=True)
+    size_id = serializers.IntegerField(write_only=True)
+    quantity = serializers.IntegerField(default=1)
     is_bonus = serializers.BooleanField(default=False)
 
     class Meta:
         model = OrderItem
-        fields = ['product_size_id', 'quantity', 'topping_ids', 'is_bonus', 'product']
+        fields = ['product_size_id', 'color_id', 'size_id', 'quantity', 'is_bonus', 'product']
 
     def validate(self, data):
-        if data.get('product_size_id') == 0:
-            raise serializers.ValidationError("Invalid product_size_id.")
+        # Проверка на наличие product_size
+        product_size_id = data.get('product_size_id')
+        color_id = data.get('color_id')
+        size_id = data.get('size_id')
+
+        try:
+            product_size = ProductSize.objects.get(id=product_size_id)
+        except ProductSize.DoesNotExist:
+            raise serializers.ValidationError(f"ProductSize with id {product_size_id} does not exist.")
+
+        # Проверка соответствия цвета и размера
+        if product_size.color.id != color_id:
+            raise serializers.ValidationError("The selected color does not match the product size.")
+
+        if not product_size.sizes.filter(id=size_id).exists():
+            raise serializers.ValidationError("The selected size does not match the product size.")
+
         return data
 
     def get_product(self, obj):
-        request = self.context.get('request')
-        photo_url = obj.product_size.product.photo.url if obj.product_size.product.photo else None
-        if photo_url and request:
-            photo_url = request.build_absolute_uri(photo_url)
-        toppings_list = [topping.id for topping in obj.topping.all()]
-
-        size = {
-            'size_id': obj.product_size.id,
-            'toppings': toppings_list
-        }
-
+        # Возвращает информацию о продукте
+        product = obj.product_size.product
         return {
-            'id': obj.product_size.product.id,
-            'name': obj.product_size.product.name,
-            'price': obj.product_size.get_price(),
-            'image': photo_url,
-            'size': size
+            'id': product.id,
+            'name': product.name,
+            'price': product.discounted_price if product.discounted_price else product.price,
+            'image': product.photo.url if product.photo else None
         }
-
-
-# class SetOrderItemSerializer(serializers.ModelSerializer):
-#     set_id = serializers.IntegerField(write_only=True)
-#
-#     class Meta:
-#         model = OrderItem
-#         fields = ['set_id', 'quantity', 'is_bonus']
-#
-#     def validate(self, data):
-#         if data.get('set_id') == 0:
-#             raise serializers.ValidationError("Invalid set_id.")
-#         return data
-#
-
-class DeliverySerializer(serializers.ModelSerializer):
-    user_address_id = serializers.IntegerField(write_only=True)
-
-    class Meta:
-        model = Delivery
-        fields = ['user_address_id']
 
 
 class OrderListSerializer(serializers.ModelSerializer):
     order_items = ProductOrderItemSerializer(many=True, required=False)
-    restaurant = RestaurantSerializer()
     total_amount = serializers.SerializerMethodField()
     order_time = serializers.SerializerMethodField()
     user_address = serializers.SerializerMethodField()
@@ -102,11 +72,11 @@ class OrderListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Order
-        fields = ['id', 'total_amount', 'order_time', 'restaurant', 'order_items', 'total_bonus_amount',
+        fields = ['id', 'total_amount', 'order_time', 'order_items', 'total_bonus_amount',
                   'is_pickup', 'user_address', 'app_download_url', 'order_status']
 
     def get_total_amount(self, obj):
-        return obj.get_total_amount_2()
+        return obj.get_total_amount()
 
     def get_order_time(self, obj):
         local_tz = pytz.timezone(settings.TIME_ZONE)
@@ -114,96 +84,69 @@ class OrderListSerializer(serializers.ModelSerializer):
         return order_time.strftime('%Y-%m-%d %H:%M')
 
     def get_user_address(self, obj):
-        return obj.delivery.user_address.city if obj.delivery.user_address else "Самовывоз"
+        if obj.is_pickup:
+            return "Самовывоз"
+        # Если у вас есть данные о номере телефона или имени неавторизованного пользователя
+        elif obj.phone_number:
+            return obj.phone_number
+        return "Адрес не указан"
 
     def get_app_download_url(self, obj):
-        link = TelegramBotToken.objects.first().app_download_link
-        if not link:
-            return None
-        return link
+        return None  # Поле app_download_link было связано с моделью TelegramBotToken, которая была удалена
 
 
 class OrderSerializer(serializers.ModelSerializer):
     products = ProductOrderItemSerializer(many=True, required=False)
-    # sets = SetOrderItemSerializer(many=True, required=False)
-    restaurant_id = serializers.IntegerField(required=False, allow_null=True)
-    delivery = DeliverySerializer(required=False)
     order_source = serializers.ChoiceField(choices=[('web', 'web'), ('mobile', 'mobile')], default='web')
     change = serializers.IntegerField(default=0)
     is_pickup = serializers.BooleanField(default=False)
     promo_code = serializers.CharField(required=False, allow_blank=True)
+    user_address_id = serializers.IntegerField(required=False, allow_null=True)  # Для авторизованного
 
     class Meta:
         model = Order
         fields = [
-            'id', 'delivery', 'order_time', 'total_amount', 'is_pickup',
-            'order_status', 'products', 'payment_method', 'change', 'restaurant_id', 'order_source', 'comment',
+            'id', 'order_time', 'total_amount', 'is_pickup', 'user_address_id', 'order_status',
+            'products', 'payment_method', 'change', 'order_source', 'comment',
             'promo_code'
-            # 'sets',
         ]
         read_only_fields = ['total_amount', 'order_time', 'order_status']
 
+    def validate(self, data):
+        # Если заказ не самовывоз и пользователь авторизован, проверяем, что указан user_address_id
+        if not data.get('is_pickup') and self.context['request'].user.is_authenticated:
+            if not data.get('user_address_id'):
+                raise serializers.ValidationError({
+                    "user_address_id": "Адрес пользователя обязателен для курьерской доставки."
+                })
+        return data
+
     def create(self, validated_data):
-        print(validated_data)
         products_data = validated_data.pop('products', [])
         promo_code_data = validated_data.pop('promo_code', None)
+        user_address_id = validated_data.pop('user_address_id', None)  # Адрес для авторизованного
 
-        sets_data = validated_data.pop('sets', [])
-        if validated_data.get('delivery'):
-            delivery_data = validated_data.pop('delivery')
-            user_address = UserAddress.objects.get(id=delivery_data['user_address_id'])
-
-        else:
-            delivery_data = {}
-            user_address = None
-        # user = validated_data.pop('user')
-
-        nearest_restaurant = self.context['nearest_restaurant']
-        delivery_fee = self.context['delivery_fee']
-
+        # Save the order
         with transaction.atomic():
-            delivery = Delivery.objects.create(
-                restaurant=nearest_restaurant,
-                user_address=user_address if user_address else None,
-                delivery_time=delivery_data['delivery_time'] if 'delivery_time' in delivery_data else None,
-                delivery_fee=delivery_fee
-            )
+            order = Order.objects.create(**validated_data)
 
-            order = Order.objects.create(
-                delivery=delivery,
-                # user=user,
-                restaurant=nearest_restaurant,
-                **validated_data
-            )
+            # Если адрес для авторизованного пользователя передан
+            if user_address_id:
+                order.user_address_id = user_address_id
+                order.save()
+
             if promo_code_data:
                 promo_code_instance = PromoCode.objects.filter(code=promo_code_data).first()
                 if not promo_code_instance or not promo_code_instance.is_valid():
                     raise serializers.ValidationError({"promo_code": "Промокод недействителен или его срок истек."})
-                validated_data['promo_code'] = promo_code_instance
-            else:
-                validated_data['promo_code'] = None
+                order.promo_code = promo_code_instance
+                order.save()
 
+            # Добавляем продукты в заказ
             for product_data in products_data:
-                topping_ids = product_data.pop('topping_ids', [])
-                excluded_ingredient_ids = product_data.pop('excluded_ingredient_ids', [])
-
                 order_item = OrderItem(order=order, product_size_id=product_data['product_size_id'],
                                        quantity=product_data['quantity'], is_bonus=product_data['is_bonus'])
-
-                if topping_ids:
-                    toppings = Topping.objects.filter(id__in=topping_ids)
-                    order_item.save()  # Сохраняем объект перед установкой связей ManyToMany
-                    order_item.topping.set(toppings)  # Устанавливаем начинки
-
-                else:
-                    order_item.save()
-                # if excluded_ingredient_ids:
-                #     excluded_ingredients = Ingredient.objects.filter(id__in=excluded_ingredient_ids)
-                #     order_item.excluded_ingredient.set(excluded_ingredients)
-
-            # for set_data in sets_data:
-            #     set_order_item = OrderItem(order=order, set_id=set_data['set_id'], quantity=set_data['quantity'])
-            #     set_order_item.save()
+                order_item.save()
 
         return order
 
@@ -211,13 +154,7 @@ class OrderSerializer(serializers.ModelSerializer):
 class ProductOrderItemPreviewSerializer(serializers.Serializer):
     product_size_id = serializers.IntegerField(write_only=True)
     topping_ids = serializers.ListField(child=serializers.IntegerField(), write_only=True, required=False)
-    excluded_ingredient_ids = serializers.ListField(child=serializers.IntegerField(), write_only=True, required=False)
     quantity = serializers.IntegerField()
-
-
-# class SetOrderItemPreviewSerializer(serializers.Serializer):
-#     set_id = serializers.IntegerField(write_only=True)
-#     quantity = serializers.IntegerField()
 
 
 class OrderPreviewSerializer(serializers.Serializer):
@@ -316,7 +253,7 @@ class ReOrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Order
-        fields = ['id', 'restaurant', 'delivery', 'order_time', 'total_amount', 'order_items', 'payment_method',
+        fields = ['id', 'order_time', 'total_amount', 'order_items', 'payment_method',
                   'order_status', 'comment']
 
     def to_representation(self, instance):
@@ -327,16 +264,13 @@ class ReOrderSerializer(serializers.ModelSerializer):
         return ret
 
 
-
-
 class OrderChatSerializer(OrderSerializer):
     order_items = ReOrderItemSerializer(many=True, read_only=True)
 
     class Meta:
         model = Order
         fields = [
-            'id', 'delivery', 'order_time', 'total_amount', 'is_pickup',
-            'order_status', 'order_items', 'payment_method', 'change', 'restaurant_id', 'order_source', 'comment',
+            'id', 'order_time', 'total_amount', 'is_pickup',
+            'order_status', 'order_items', 'payment_method', 'change', 'order_source', 'comment',
             'promo_code'
-            # 'sets',
         ]

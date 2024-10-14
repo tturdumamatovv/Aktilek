@@ -80,21 +80,22 @@ class VerifyCodeView(generics.CreateAPIView):
         hardcoded_code = '1234'
         hardcoded_phone_number = '+996123456789'
 
+        # Ищем пользователя по коду
         user = User.objects.filter(code=code).first()
 
-        # Проверка захардкоженного кода
         if code == hardcoded_code:
             user = User.objects.filter(phone_number=hardcoded_phone_number).first()
 
         if not user:
             return Response({'error': 'Invalid code.'}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Обновляем данные пользователя
         user.is_verified = True
         user.code = None
 
-        if fcm_token is not None:
+        if fcm_token:
             user.fcm_token = fcm_token
-        if receive_notifications is not None:
+        if receive_notifications:
             user.receive_notifications = receive_notifications
 
         user.save()
@@ -214,3 +215,14 @@ class NotificationSettingsAPIView(generics.RetrieveUpdateAPIView):
 
         serializer = self.get_serializer(user)
         return Response(serializer.data)
+
+
+from apps.orders.models import Order
+
+def link_orders_to_user(user):
+    """Привязка заказов, сделанных с номером телефона, к авторизованному пользователю."""
+    if user.phone_number:
+        orders = Order.objects.filter(phone_number=user.phone_number, user__isnull=True)
+        for order in orders:
+            order.user = user
+            order.save()

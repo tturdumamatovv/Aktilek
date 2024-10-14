@@ -11,8 +11,6 @@ class OrderInline(TabularInline):
     extra = 0
     classes = ['collapse']
     fields = (
-        'restaurant',
-        'delivery',
         'order_time',
         'total_amount',
         'total_bonus_amount',
@@ -25,8 +23,6 @@ class OrderInline(TabularInline):
         'comment',
     )
     readonly_fields = (
-            'restaurant',
-            'delivery',
             'order_time',
             'total_amount',
             'total_bonus_amount',

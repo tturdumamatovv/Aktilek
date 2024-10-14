@@ -9,21 +9,11 @@ from django.conf import settings
 from apps.services.bonuces import apply_bonus_points
 from apps.services.firebase_notification import send_firebase_notification
 from apps.services.get_coordinates import get_coordinates
-from .models import Restaurant, Order
+from .models import Order
 
 from decouple import config
 
 api_key=config('API_KEY')
-
-@receiver(pre_save, sender=Restaurant)
-def set_coordinates(sender, instance, **kwargs):
-    if instance.address and (instance.latitude is None or instance.longitude is None):
-        latitude, longitude = get_coordinates(instance.address, api_key)
-        if latitude and longitude:
-            instance.latitude = latitude
-            instance.longitude = longitude
-            instance.save()
-
 
 def get_readable_order_status(status):
     if status == 'pending':
@@ -51,7 +41,7 @@ def check_status_change(sender, instance, **kwargs):
         #     instance.user.save()
         #     apply_bonus_points(instance.user, instance.total_bonus_amount)
 
-        if instance.user.fcm_token:
+        if instance.user and instance.user.fcm_token:
             readable_status = get_readable_order_status(instance.order_status)
 
             data = {

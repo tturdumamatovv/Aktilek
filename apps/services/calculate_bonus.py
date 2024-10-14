@@ -1,6 +1,5 @@
 from decimal import Decimal
 
-
 def calculate_and_apply_bonus(order):
     total_order_amount = Decimal('0.00')
     total_bonus_amount = Decimal('0.00')
@@ -12,15 +11,24 @@ def calculate_and_apply_bonus(order):
         else:
             total_order_amount += order_item.calculate_total_amount()
 
-    if user.bonus is None:
-        user.bonus = 0
-    print(total_bonus_amount, user.bonus)
-    if total_bonus_amount > user.bonus:
+    # Проверяем, что пользователь существует и его бонусы не равны None
+    if user is None or user.bonus is None:
+        user_bonus = Decimal('0.00')
+    else:
+        user_bonus = user.bonus
+
+    print(total_bonus_amount, user_bonus)
+
+    # Проверка, достаточно ли бонусов у пользователя
+    if total_bonus_amount > user_bonus:
         raise ValueError("Not enough bonus points.")
 
-    user.bonus -= total_bonus_amount  # Use the bonuses
-    user.save()
+    # Вычитаем бонусы из баланса пользователя
+    if user:
+        user.bonus -= total_bonus_amount
+        user.save()
 
+    # Обновляем общую сумму заказа
     order.total_amount = total_order_amount
     order.save()
 

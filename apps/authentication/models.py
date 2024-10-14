@@ -57,7 +57,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 
 class UserAddress(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='addresses', verbose_name=_("Пользователь"))
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='addresses', verbose_name=_("Пользователь"), null=True, blank=True)
     city = models.CharField(max_length=100, verbose_name=_("Адрес"), null=True, blank=True)
     # street = models.CharField(max_length=100, verbose_name=_("Улица"), null=True, blank=True)
     # house_number = models.CharField(max_length=10, verbose_name=_("Номер дома"), null=True, blank=True)

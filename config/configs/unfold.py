@@ -91,11 +91,6 @@ UNFOLD = {
                         "icon": "person",
                         "link": reverse_lazy("admin:authentication_user_changelist"),
                     },
-                    {
-                        "title": _("Чат поддержки"),
-                        "icon": "support",
-                        "link": reverse_lazy("admin-chat-list"),
-                    },
                 ],
             },
             {
@@ -104,19 +99,9 @@ UNFOLD = {
                 "collapsible": True,
                 "items": [
                     {
-                        "title": _("Рестораны"),
-                        "icon": "coffee",
-                        "link": reverse_lazy("admin:orders_restaurant_changelist"),
-                    },
-                    {
                         "title": _("Заказы"),
                         "icon": "archive",
                         "link": reverse_lazy("admin:orders_order_changelist"),
-                    },
-                    {
-                        "title": _("Доставки"),
-                        "icon": "local_shipping",
-                        "link": reverse_lazy("admin:orders_delivery_changelist"),
                     },
                 ],
             },
@@ -129,11 +114,6 @@ UNFOLD = {
                         "title": _("Продукты"),
                         "icon": "local_pizza",
                         "link": reverse_lazy("admin:product_product_changelist"),
-                    },
-                    {
-                        "title": _("Топпинги"),
-                        "icon": "emoji_food_beverage",
-                        "link": reverse_lazy("admin:product_topping_changelist"),
                     },
                     {
                         "title": _("Категории"),
@@ -195,24 +175,9 @@ UNFOLD = {
                 "collapsible": True,
                 "items": [
                     {
-                        "title": _("Telegram"),
-                        "icon": "settings",
-                        "link": reverse_lazy("admin:orders_telegrambottoken_changelist"),
-                    },
-                    {
-                        "title": _("WhatsApp"),
-                        "icon": "settings",
-                        "link": reverse_lazy("admin:orders_whatsappchat_changelist"),
-                    },
-                    {
                         "title": _("Кэшбэк"),
                         "icon": "settings",
                         "link": reverse_lazy("admin:orders_percentcashback_changelist"),
-                    },
-                    {
-                        "title": _("Тарифы за расстояние"),
-                        "icon": "settings",
-                        "link": reverse_lazy("admin:orders_distancepricing_changelist"),
                     },
                 ],
             },
