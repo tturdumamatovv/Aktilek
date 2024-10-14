@@ -25,12 +25,14 @@ class ProductOrderItemSerializer(serializers.ModelSerializer):
     product_size_id = serializers.IntegerField(write_only=True)
     color_id = serializers.IntegerField(write_only=True)
     size_id = serializers.IntegerField(write_only=True)
+    color = serializers.SerializerMethodField(read_only=True)  # Поле для возврата выбранного цвета
+    size = serializers.SerializerMethodField(read_only=True)
     quantity = serializers.IntegerField(default=1)
     is_bonus = serializers.BooleanField(default=False)
 
     class Meta:
         model = OrderItem
-        fields = ['product_size_id', 'color_id', 'size_id', 'quantity', 'is_bonus', 'product']
+        fields = ['product_size_id', 'color_id', 'size_id', 'quantity', 'is_bonus', 'product', 'color', 'size']
 
     def validate(self, data):
         # Проверка на наличие product_size
@@ -61,6 +63,21 @@ class ProductOrderItemSerializer(serializers.ModelSerializer):
             'price': product.discounted_price if product.discounted_price else product.price,
             'image': product.photo.url if product.photo else None
         }
+
+    def get_color(self, obj):
+        # Возвращаем информацию о цвете
+        return {
+            'id': obj.product_size.color.id,
+            'name': obj.product_size.color.name,
+            'hex_code': obj.product_size.color.hex_code,
+        }
+
+    def get_size(self, obj):
+        # Возвращаем только выбранный размер
+        chosen_size = obj.product_size.sizes.filter(id=obj.size_id).first()
+        if chosen_size:
+            return {'id': chosen_size.id, 'name': chosen_size.name}
+        return None
 
 
 class OrderListSerializer(serializers.ModelSerializer):
@@ -114,7 +131,7 @@ class OrderSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'order_time', 'total_amount', 'is_pickup', 'user_address_id', 'order_status',
             'products', 'payment_method', 'change', 'order_source', 'comment',
-            'promo_code'
+            'promo_code',
         ]
         read_only_fields = ['total_amount', 'order_time', 'order_status']
 
@@ -150,7 +167,7 @@ class OrderSerializer(serializers.ModelSerializer):
 
             # Добавляем продукты в заказ
             for product_data in products_data:
-                order_item = OrderItem(order=order, product_size_id=product_data['product_size_id'],
+                order_item = OrderItem(order=order, product_size_id=product_data['product_size_id'], size_id=product_data['size_id'],
                                        quantity=product_data['quantity'], is_bonus=product_data['is_bonus'])
                 order_item.save()
 

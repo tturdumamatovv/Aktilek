@@ -6,7 +6,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from apps.pages.models import SingletonModel
-from apps.product.models import ProductSize, Topping
+from apps.product.models import ProductSize, Topping, Size
 
 
 class Order(models.Model):
@@ -94,6 +94,7 @@ class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='order_items', verbose_name=_('Заказ'))
     product_size = models.ForeignKey(ProductSize, on_delete=models.CASCADE, verbose_name=_('Размер продукта'),
                                      blank=True, null=True)
+    size_id = models.IntegerField(verbose_name=_('Выбранный размер'), blank=True, null=True)
     quantity = models.PositiveIntegerField(verbose_name=_('Количество'))
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name=_('Общая сумма'))
     is_bonus = models.BooleanField(default=False, verbose_name=_('Бонусный продукт'))
@@ -103,10 +104,17 @@ class OrderItem(models.Model):
         verbose_name_plural = _("Элементы заказа")
 
     def __str__(self):
+        size_name = None
+        try:
+            # Попытка получить объект размера по его id
+            size = Size.objects.get(id=self.size_id)
+            size_name = size.name
+        except Size.DoesNotExist:
+            size_name = "Размер не найден"
+
         if self.product_size:
-            sizes = ', '.join([size.name for size in self.product_size.sizes.all()])
-            return f"{self.product_size.product.name} ({sizes}) - {self.quantity} шт."
-        return f"Товар - {self.quantity} шт."
+            return f"{self.product_size.product.name} - {size_name} - {self.quantity} шт."
+        return f"Товар - {size_name} - {self.quantity} шт."
 
     def calculate_total_amount(self):
         if not self.is_bonus:
