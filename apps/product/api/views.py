@@ -55,10 +55,8 @@ class ProductDetailView(generics.RetrieveAPIView):
 
 
 class ProductBonusView(generics.ListAPIView):
-    queryset = ProductSize.objects.filter(
-        product__bonuses=True,
-    )
-    serializer_class =  ProductSizeSerializer
+    queryset = Product.objects.filter(bonus_price__gt=0)
+    serializer_class =  ProductSerializer
 
 
 class ProductListByCategorySlugView(generics.ListAPIView):
@@ -124,20 +122,13 @@ class CheckProductSizes(APIView):
         serializer = ProductSizeIdListSerializer(data=request.data)
         if serializer.is_valid():
             size_ids = serializer.validated_data['sizes']
-            # Получаем нужные объекты из базы данных
             sizes = ProductSize.objects.filter(id__in=size_ids).select_related('product', 'size')
-            response_data = {}
+            response_data = {size.id: size.id for size in sizes}
 
-            for size in sizes:
-                # Здесь убрали логику, связанную с ценами
-                response_data[size.id] = size.id
-
-            # Добавляем те ID размеров, которые не были найдены в базе данных
             missing_sizes = set(size_ids) - set(response_data.keys())
             response_data.update({size_id: None for size_id in missing_sizes})
 
             return Response(response_data)
-
         return Response(serializer.errors, status=400)
 
 

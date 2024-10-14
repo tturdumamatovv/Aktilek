@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from django.db.models import Avg
+from django.db.models import Min, Max, Avg, F
 
 from apps.product.models import (
     Product,
@@ -20,7 +20,9 @@ from apps.product.models import (
     AttributeField,
     OrderRequest,
     ProductImage,
-    Size
+    Size,
+    Country,
+    Gender
 )
 
 
@@ -94,6 +96,18 @@ class CharacteristicSerializer(serializers.ModelSerializer):
         fields = ['name', 'value']
 
 
+class CountrySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Country
+        fields = ['id', 'name', 'logo']
+
+
+class GenderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Gender
+        fields = ['id', 'name']
+
+
 class ProductSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True)
     category_slug = serializers.SerializerMethodField()
@@ -105,7 +119,7 @@ class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = ['id', 'name', 'description', 'photo', 'tags',
-                  'price', 'discounted_price',
+                  'price', 'discounted_price', 'bonus_price',
                   'category_slug', 'category_name', 'is_favorite', 'average_rating']
 
     def get_photo(self, obj):
@@ -146,13 +160,15 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     average_rating = serializers.SerializerMethodField()
     reviews = ReviewSerializer(many=True, read_only=True, source='product_reviews')  # Предположим, что ReviewSerializer уже существует
     characteristics = CharacteristicSerializer(many=True, read_only=True, source='product_characteristics')  # Предположим, что CharacteristicSerializer уже существует
+    gender = GenderSerializer(read_only=True)
+    country = CountrySerializer(read_only=True)
 
     class Meta:
         model = Product
         fields = ['id', 'name', 'description', 'photo', 'tags',
                   'price', 'discounted_price', 'product_sizes',
                   'category_slug', 'category_name', 'is_favorite',
-                  'reviews', 'characteristics', 'average_rating']
+                  'reviews', 'characteristics', 'average_rating', 'gender', 'country']
 
     def get_category_slug(self, obj):
         if obj.category:
@@ -229,11 +245,12 @@ class CategoryProductSerializer(serializers.ModelSerializer):
     products = ProductSerializer(many=True, read_only=True)
     subcategories = serializers.SerializerMethodField()
     image = serializers.SerializerMethodField()
+    filters = serializers.SerializerMethodField()
     # sets = SetSerializer(many=True, read_only=True)
 
     class Meta:
         model = Category
-        fields = ['id', 'name', 'description', 'slug', 'image', 'products', 'subcategories']  # 'sets']
+        fields = ['id', 'name', 'description', 'slug', 'image', 'products', 'subcategories', 'filters']
 
     def get_image(self, obj):
         request = self.context.get('request')
@@ -246,6 +263,32 @@ class CategoryProductSerializer(serializers.ModelSerializer):
         subcategories = obj.subcategories.all()
         serializer = CategoryProductSerializer(subcategories, many=True, context=self.context)
         return serializer.data
+
+    def get_filters(self, obj):
+        # Получаем все продукты в категории
+        products = Product.objects.filter(category=obj)
+
+        # Минимальная и максимальная цена
+        price_min = products.aggregate(Min('discounted_price'))['discounted_price__min'] or products.aggregate(Min('price'))['price__min']
+        price_max = products.aggregate(Max('discounted_price'))['discounted_price__max'] or products.aggregate(Max('price'))['price__max']
+
+        # Список доступных размеров
+        sizes = list(set(products.values_list('product_sizes__sizes__name', flat=True)))
+        countries = list(set(products.values_list('country__name', flat=True)))
+        genders = list(set(products.values_list('gender__name', flat=True)))
+
+
+        # Средний рейтинг
+        ratings = products.aggregate(average_rating=Avg('product_reviews__rating'))['average_rating'] or 0
+
+        return {
+            'price_min': price_min,
+            'price_max': price_max,
+            'sizes': list(sizes),
+            'countries': list(countries),
+            'genders': list(genders),
+            'average_rating': ratings
+        }
 
 
 class CategoryOnlySerializer(serializers.ModelSerializer):
@@ -278,7 +321,16 @@ class ProductSizeWithBonusSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProductSize
-        fields = ['product_name', 'product_description', 'product_photo', 'size', 'id']
+        fields = ['product_name', 'product_description', 'product_photo', 'size', 'id', 'bonus_price']
+
+    def get_bonus_price(self, obj):
+        return obj.bonus_price
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['bonus_price'] = float(representation['bonus_price'])
+        return representation
+
 
 
 class ProductSizeIdListSerializer(serializers.Serializer):
