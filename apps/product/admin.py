@@ -17,14 +17,6 @@ from .models import (
     Characteristic,
     Review,
     Color,
-    Attribute,
-    AttributeField,
-    Form,
-    FormVariant,
-    FormCategory,
-    Ornament,
-    FormColor,
-    OrderRequest,
     ProductImage,
     Country,
     Gender
@@ -135,56 +127,3 @@ class ToppingAdmin(ExcludeBaseFieldsMixin, TranslationAdmin):
     list_display = ('name', 'logo')
     search_fields = ('name',)
     exclude_base_fields = ('name',)
-
-
-class AttributeFieldInline(TabularInline):
-    model = AttributeField
-    extra = 0
-
-
-# Админка для Form
-@admin.register(Form)
-class FormAdmin(ModelAdmin, TranslationAdmin):
-    list_display = ('name', 'category')
-    filter_horizontal = ['ornaments', 'form_color', 'attribute']
-    # inlines = [OrnamentInline, FormColorInline, AttributeInline]
-
-# Админка для FormCategory
-@admin.register(FormCategory)
-class FormCategoryAdmin(ModelAdmin, TranslationAdmin):
-    list_display = ('name', 'description')
-
-# Админка для Ornament
-@admin.register(Ornament)
-class OrnamentAdmin(ModelAdmin, TranslationAdmin):
-    list_display = ('name',)
-    exclude = ('form',)  # Так как у нас есть через промежуточную таблицу, убираем основное поле
-
-# Админка для FormColor
-@admin.register(FormColor)
-class FormColorAdmin(ModelAdmin, TranslationAdmin):
-    list_display = ('name', 'hex_code')
-    exclude = ('form',)  # Тоже убираем из админки ManyToMany поле
-
-# Админка для Attribute
-@admin.register(Attribute)
-class AttributeAdmin(ModelAdmin, TranslationAdmin):
-    list_display = ('type',)
-    exclude = ('form',)
-    inlines = [AttributeFieldInline]
-
-# Админка для FormVariant
-@admin.register(FormVariant)
-class FormVariantAdmin(ModelAdmin):
-    list_display = ('name', 'color', 'ornament', 'form')
-    filter_horizontal = ('attribute_fields',)
-
-# Админка для AttributeField
-@admin.register(AttributeField)
-class AttributeFieldAdmin(ModelAdmin, TranslationAdmin):
-    list_display = ('name', 'attribute')
-
-
-@admin.register(OrderRequest)
-class OrderRequestAdmin(ModelAdmin):
-    list_display = ('full_name', 'phone_number')

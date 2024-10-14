@@ -11,14 +11,6 @@ from apps.product.models import (
     Color,
     Review,
     Characteristic,
-    Ornament,
-    Form,
-    FormVariant,
-    FormColor,
-    FormCategory,
-    Attribute,
-    AttributeField,
-    OrderRequest,
     ProductImage,
     Size,
     Country,
@@ -152,6 +144,13 @@ class ProductSerializer(serializers.ModelSerializer):
     def get_average_rating(self, obj):
         return round(obj.product_reviews.aggregate(Avg('rating'))['rating__avg'] or 0)
 
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['price'] = float(representation['price']) if representation['price'] else None
+        representation['discounted_price'] = float(representation['discounted_price']) if representation['discounted_price'] else None
+        representation['bonus_price'] = float(representation['bonus_price']) if representation['bonus_price'] else None
+        return representation
+
 
 class ProductDetailSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True)
@@ -168,7 +167,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = ['id', 'name', 'description', 'photo', 'tags',
-                  'price', 'discounted_price', 'product_sizes',
+                  'price', 'discounted_price', 'bonus_price', 'product_sizes',
                   'category_slug', 'category_name', 'is_favorite',
                   'reviews', 'characteristics', 'average_rating', 'gender', 'country']
 
@@ -193,6 +192,13 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
     def get_average_rating(self, obj):
         return round(obj.product_reviews.aggregate(Avg('rating'))['rating__avg'] or 0)
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['price'] = float(representation['price']) if representation['price'] else None
+        representation['discounted_price'] = float(representation['discounted_price']) if representation['discounted_price'] else None
+        representation['bonus_price'] = float(representation['bonus_price']) if representation['bonus_price'] else None
+        return representation
 
 
 class SizeProductSerializer(serializers.ModelSerializer):
@@ -372,68 +378,3 @@ class ReviewCreateSerializer(serializers.ModelSerializer):
         user = request.user
         validated_data['user'] = user
         return super().create(validated_data)
-
-
-class OrnamentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Ornament
-        fields = ['id', 'name', 'image']
-
-class FormColorSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = FormColor
-        fields = ['id', 'name', 'hex_code']
-
-class AttributeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Attribute
-        fields = ['id', 'type']
-
-class FormVariantSerializer(serializers.ModelSerializer):
-    color = FormColorSerializer()
-    ornament = OrnamentSerializer()
-
-    class Meta:
-        model = FormVariant
-        fields = ['id', 'name', 'logo', 'color', 'ornament']
-
-class FormSerializer(serializers.ModelSerializer):
-    ornaments = OrnamentSerializer(many=True)
-    form_color = FormColorSerializer(many=True)
-    attribute = AttributeSerializer(many=True)
-    variants = FormVariantSerializer(many=True, source='formvariant_set')
-
-    class Meta:
-        model = Form
-        fields = ['id', 'name', 'image', 'category', 'ornaments', 'form_color', 'attribute', 'variants']
-
-class FormCategorySerializer(serializers.ModelSerializer):
-    forms = FormSerializer(many=True)
-
-    class Meta:
-        model = FormCategory
-        fields = ['id', 'name', 'description', 'slug', 'forms']
-
-
-class FormVariantCreateSerializer(serializers.ModelSerializer):
-    # Ссылки на связанные объекты передаются по их ID
-    color_id = serializers.PrimaryKeyRelatedField(queryset=FormColor.objects.all(), source='color')
-    ornament_id = serializers.PrimaryKeyRelatedField(queryset=Ornament.objects.all(), source='ornament')
-    form_id = serializers.PrimaryKeyRelatedField(queryset=Form.objects.all(), source='form')
-    attribute_fields_ids = serializers.PrimaryKeyRelatedField(many=True, queryset=AttributeField.objects.all(), source='attribute_fields')
-
-    class Meta:
-        model = FormVariant
-        fields = ['name', 'logo', 'color_id', 'ornament_id', 'form_id', 'attribute_fields_ids']
-
-    def create(self, validated_data):
-        attribute_fields = validated_data.pop('attribute_fields')
-        form_variant = FormVariant.objects.create(**validated_data)
-        form_variant.attribute_fields.set(attribute_fields)
-        return form_variant
-
-
-class OrderRequestSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = OrderRequest
-        fields = ['full_name', 'email', 'phone_number', 'city_region', 'quantity', 'delivery_date', 'comments']

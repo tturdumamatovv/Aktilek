@@ -12,9 +12,6 @@ from apps.product.api.views import (
     FavoriteProductsListView,
     ToggleFavoriteProductView,
     CreateReviewView,
-    FormCategoryDetailView,
-    FormVariantCreateView,
-    OrderRequestCreateView,
     ProductDetailView
 )
 
@@ -30,8 +27,5 @@ urlpatterns = [
           path('favorites/toggle/', ToggleFavoriteProductView.as_view(), name='favorite-add-delete'),
           path('favorites/', FavoriteProductsListView.as_view(), name='favorite-products'),
           path('reviews/create/', CreateReviewView.as_view(), name='create-review'),
-          path('form/<slug:slug>/', FormCategoryDetailView.as_view(), name='form-category-detail'),
-          path('form-variants/', FormVariantCreateView.as_view(), name='form-variant-create'),
-          path('order-request/', OrderRequestCreateView.as_view(), name='order-request'),
           path('product/<int:id>/', ProductDetailView.as_view(), name='product-detail'),
 ]

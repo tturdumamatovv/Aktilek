@@ -17,9 +17,6 @@ from apps.product.api.serializers import (
     ProductSizeIdListSerializer,
     FavoriteProduct,
     ReviewCreateSerializer,
-    FormCategorySerializer,
-    FormVariantCreateSerializer,
-    OrderRequestSerializer,
     ProductDetailSerializer
 )
 from apps.product.models import (
@@ -27,9 +24,6 @@ from apps.product.models import (
     Product,
     ProductSize,
     Review,
-    FormCategory,
-    FormVariant,
-    OrderRequest
 )
 
 
@@ -172,19 +166,3 @@ class CreateReviewView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
-
-
-class FormCategoryDetailView(generics.RetrieveAPIView):
-    queryset = FormCategory.objects.all()
-    serializer_class = FormCategorySerializer
-    lookup_field = 'slug'
-
-
-class FormVariantCreateView(generics.CreateAPIView):
-    queryset = FormVariant.objects.all()
-    serializer_class = FormVariantCreateSerializer
-
-
-class OrderRequestCreateView(generics.CreateAPIView):
-    queryset = OrderRequest.objects.all()
-    serializer_class = OrderRequestSerializer
