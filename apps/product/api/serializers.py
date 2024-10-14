@@ -278,6 +278,7 @@ class CategoryProductSerializer(serializers.ModelSerializer):
         sizes = list(set(products.values_list('product_sizes__sizes__name', flat=True)))
         countries = list(set(products.values_list('country__name', flat=True)))
         genders = list(set(products.values_list('gender__name', flat=True)))
+        colors = list(set(products.values_list('product_sizes__color__name', flat=True)))
 
 
         # Средний рейтинг
@@ -289,6 +290,7 @@ class CategoryProductSerializer(serializers.ModelSerializer):
             'sizes': list(sizes),
             'countries': list(countries),
             'genders': list(genders),
+            'colors': list(colors),
             'average_rating': ratings
         }
 
