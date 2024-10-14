@@ -86,9 +86,15 @@ class OrderListSerializer(serializers.ModelSerializer):
     def get_user_address(self, obj):
         if obj.is_pickup:
             return "Самовывоз"
-        # Если у вас есть данные о номере телефона или имени неавторизованного пользователя
-        elif obj.phone_number:
-            return obj.phone_number
+
+        # Проверяем, связан ли заказ с пользователем и берем данные о номере телефона оттуда
+        if obj.user:
+            return obj.user.phone_number  # Информация о пользователе через ForeignKey
+
+        # Иначе проверяем, был ли указан адрес (для неавторизованных пользователей)
+        if obj.user_address:
+            return f"{obj.user_address.city}, {obj.user_address.apartment_number}"
+
         return "Адрес не указан"
 
     def get_app_download_url(self, obj):
