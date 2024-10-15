@@ -99,6 +99,11 @@ UNFOLD = {
                 "collapsible": True,
                 "items": [
                     {
+                        "title": _("Склады"),
+                        "icon": "archive",
+                        "link": reverse_lazy("admin:orders_warehouse_changelist"),
+                    },
+                    {
                         "title": _("Заказы"),
                         "icon": "archive",
                         "link": reverse_lazy("admin:orders_order_changelist"),

@@ -6,7 +6,7 @@ from apps.orders.models import (
     Order,
     OrderItem,
     Report,
-    PromoCode
+    PromoCode, Warehouse
 )
 from apps.product.models import ProductSize, Product, Size, Topping, Color, ProductImage
 from django.utils.translation import gettext_lazy as _
@@ -137,13 +137,14 @@ class OrderSerializer(serializers.ModelSerializer):
     promo_code = serializers.CharField(required=False, allow_blank=True)
     user_address_id = serializers.IntegerField(required=False, allow_null=True)
     delivery_info = serializers.SerializerMethodField()
+    warehouse_city = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
         fields = [
             'id', 'order_time', 'total_amount', 'delivery_info', 'is_pickup', 'user_address_id', 'order_status',
             'products', 'payment_method', 'change', 'order_source', 'comment',
-            'promo_code',
+            'promo_code', 'warehouse_city',
         ]
         read_only_fields = ['total_amount', 'order_time', 'order_status']
 
@@ -151,6 +152,18 @@ class OrderSerializer(serializers.ModelSerializer):
         # Условие для возврата информации о доставке
         if not obj.is_pickup:
             return "Уточните сумму доставки у оператора"
+        return None
+
+    def get_warehouse_city(self, obj):
+        # Проверяем, является ли заказ самовывозом
+        if obj.is_pickup:
+            try:
+                warehouse = Warehouse.objects.filter(is_primary=True).first()
+                if warehouse:
+                    return warehouse.city
+                return "Склад не найден"
+            except Warehouse.DoesNotExist:
+                return "Склад не найден"
         return None
 
     def validate(self, data):

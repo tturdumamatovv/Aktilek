@@ -9,7 +9,7 @@ from .models import (
     OrderItem,
     PercentCashback,
     Report,
-    PromoCode
+    PromoCode, Warehouse
 )
 from apps.services.generate_message import generate_order_message
 
@@ -59,3 +59,10 @@ class PromoCodeAdmin(ModelAdmin):
     list_display = ['code', 'discount', 'valid_from', 'valid_to', 'active', 'type']
     list_filter = ['active', 'valid_from', 'valid_to']
     search_fields = ['code']
+
+
+@admin.register(Warehouse)
+class WarehouseAdmin(ModelAdmin):
+    list_display = ['city']
+    list_filter = ['city']
+    search_fields = ['city']

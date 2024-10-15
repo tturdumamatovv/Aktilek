@@ -191,3 +191,21 @@ class PromoCode(models.Model):
     def is_valid(self):
         from django.utils import timezone
         return self.active and self.valid_from <= timezone.now() <= self.valid_to
+
+
+class Warehouse(models.Model):
+    city = models.CharField(max_length=100, verbose_name=_("Адрес"), null=True, blank=True)
+    apartment_number = models.CharField(max_length=10, verbose_name=_("Номер квартиры"), null=True, blank=True)
+    entrance = models.CharField(max_length=10, verbose_name=_("Подъезд"), null=True, blank=True)
+    floor = models.CharField(max_length=10, verbose_name=_("Этаж"), null=True, blank=True)
+    intercom = models.CharField(max_length=10, verbose_name=_("Домофон"), null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name=_("Дата создания"))
+    is_primary = models.BooleanField(default=False, verbose_name=_("Главный"))
+    latitude = models.DecimalField(max_digits=200, decimal_places=6, verbose_name=_('Широта'), null=True, blank=True)
+    longitude = models.DecimalField(max_digits=200, decimal_places=6, verbose_name=_('Долгота'), null=True, blank=True)
+    comment = models.TextField(verbose_name=_("Комментарий"), null=True, blank=True)
+
+    class Meta:
+
+        verbose_name = _("Склад")
+        verbose_name_plural = _("Склады")
