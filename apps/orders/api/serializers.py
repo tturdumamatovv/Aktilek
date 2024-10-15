@@ -8,7 +8,7 @@ from apps.orders.models import (
     Report,
     PromoCode
 )
-from apps.product.models import ProductSize, Product, Size, Topping, Color
+from apps.product.models import ProductSize, Product, Size, Topping, Color, ProductImage
 from django.utils.translation import gettext_lazy as _
 
 
@@ -71,11 +71,16 @@ class ProductOrderItemSerializer(serializers.ModelSerializer):
         }
 
     def get_color(self, obj):
+        request = self.context.get('request')
+        color = obj.product_size.color
+        images = ProductImage.objects.filter(color=color)
+        image_urls = [request.build_absolute_uri(image.image.url) for image in images if image.image and request]
         # Возвращаем информацию о цвете
         return {
             'id': obj.product_size.color.id,
             'name': obj.product_size.color.name,
             'hex_code': obj.product_size.color.hex_code,
+            'images': image_urls
         }
 
     def get_size(self, obj):

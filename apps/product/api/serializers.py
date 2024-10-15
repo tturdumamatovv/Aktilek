@@ -127,6 +127,7 @@ class ProductSerializer(serializers.ModelSerializer):
     category_slug = serializers.SerializerMethodField()
     category_name = serializers.SerializerMethodField()
     is_favorite = serializers.SerializerMethodField()
+    review_count = serializers.SerializerMethodField()
     average_rating = serializers.SerializerMethodField()
     photo = serializers.SerializerMethodField()
     is_ordered = serializers.BooleanField(read_only=True)
@@ -135,7 +136,7 @@ class ProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = ['id', 'name', 'slug', 'description', 'photo', 'tags',
                   'price', 'discounted_price', 'bonus_price',
-                  'category_slug', 'category_name', 'is_favorite', 'average_rating', 'is_ordered']
+                  'category_slug', 'category_name', 'is_favorite', 'average_rating', 'review_count', 'is_ordered']
 
     def get_photo(self, obj):
         request = self.context.get('request')
@@ -161,6 +162,10 @@ class ProductSerializer(serializers.ModelSerializer):
         if user.is_authenticated:
             return FavoriteProduct.objects.filter(user=user, product=obj).exists()
         return False
+
+    def get_review_count(self, obj):
+        # Подсчитываем количество комментариев, игнорируя пустые строки
+        return obj.product_reviews.exclude(comment='').count()
 
     def get_average_rating(self, obj):
         return round(obj.product_reviews.aggregate(Avg('rating'))['rating__avg'] or 0)
@@ -395,10 +400,16 @@ class ProductSizeIdListSerializer(serializers.Serializer):
 
 
 class FavoriteProductSerializer(serializers.ModelSerializer):
+    product_id = serializers.IntegerField(source='product.id', read_only=True)
+    is_favorite = serializers.SerializerMethodField()
+
     class Meta:
         model = FavoriteProduct
-        fields = ['id', 'user', 'product']
-        read_only_fields = ['user']
+        fields = ['product_id', 'is_favorite']
+
+    def get_is_favorite(self, obj):
+        # Всегда возвращаем True, так как если запись есть, продукт в избранном
+        return True
 
 
 class ReviewCreateSerializer(serializers.ModelSerializer):

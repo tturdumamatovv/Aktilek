@@ -153,11 +153,20 @@ class ToggleFavoriteProductView(generics.GenericAPIView):
         favorite, created = FavoriteProduct.objects.get_or_create(user=request.user, product=product)
 
         if not created:
-            # Если продукт уже в избранном, удаляем его
+            # Если продукт уже в избранном, удаляем его и возвращаем is_favorite = False
             favorite.delete()
-            return Response({"message": "Продукт удален из избранного"}, status=status.HTTP_200_OK)
+            return Response({
+                "message": "Продукт удален из избранного",
+                "product_id": product_id,
+                "is_favorite": False
+            }, status=status.HTTP_200_OK)
 
-        return Response({"message": "Продукт добавлен в избранное"}, status=status.HTTP_201_CREATED)
+        # Если продукт добавлен в избранное, возвращаем is_favorite = True
+        return Response({
+            "message": "Продукт добавлен в избранное",
+            "product_id": product_id,
+            "is_favorite": True
+        }, status=status.HTTP_201_CREATED)
 
 
 class FavoriteProductsListView(generics.ListAPIView):
