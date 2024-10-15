@@ -48,6 +48,16 @@ class ProductDetailView(generics.RetrieveAPIView):
         return {'request': self.request}
 
 
+class ProductDetailBySlugView(generics.RetrieveAPIView):
+    queryset = Product.objects.all()
+    serializer_class = ProductDetailSerializer
+    lookup_field = 'slug'
+
+    def get_serializer_context(self):
+        # Добавляем request в контекст для сериализатора
+        return {'request': self.request}
+
+
 class ProductBonusView(generics.ListAPIView):
     queryset = Product.objects.filter(bonus_price__gt=0)
     serializer_class =  ProductSerializer

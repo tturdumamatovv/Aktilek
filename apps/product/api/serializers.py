@@ -133,7 +133,7 @@ class ProductSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ['id', 'name', 'description', 'photo', 'tags',
+        fields = ['id', 'name', 'slug', 'description', 'photo', 'tags',
                   'price', 'discounted_price', 'bonus_price',
                   'category_slug', 'category_name', 'is_favorite', 'average_rating', 'is_ordered']
 
@@ -189,7 +189,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ['id', 'name', 'description', 'photo', 'tags',
+        fields = ['id', 'name', 'slug', 'description', 'photo', 'tags',
                   'price', 'discounted_price', 'bonus_price', 'product_sizes',
                   'category_slug', 'category_name', 'is_favorite',
                   'reviews', 'characteristics', 'average_rating',
@@ -402,7 +402,7 @@ class FavoriteProductSerializer(serializers.ModelSerializer):
 
 
 class ReviewCreateSerializer(serializers.ModelSerializer):
-    images = ReviewImageSerializer(many=True, required=False)  # Новое поле для изображений
+    images = ReviewImageSerializer(many=True, required=False)  # Поле для изображений
 
     class Meta:
         model = Review
@@ -412,9 +412,10 @@ class ReviewCreateSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         user = request.user
 
-        # Проверка, чтобы пользователь не мог оставить более одного отзыва для одного продукта
-        # if Review.objects.filter(user=user, product=data['product']).exists():
-        #     raise serializers.ValidationError("Вы уже оставляли отзыв на этот продукт.")
+        # Проверка, чтобы пользователь мог оставить до 5 отзывов для одного продукта
+        reviews_count = Review.objects.filter(user=user, product=data['product']).count()
+        if reviews_count >= 5:
+            raise serializers.ValidationError("Вы можете оставить не более 5 отзывов на этот продукт.")
 
         # Проверка диапазона рейтинга
         rating = data.get('rating')

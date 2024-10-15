@@ -1,5 +1,9 @@
 from datetime import datetime
 from decimal import Decimal
+from django.core.mail import send_mail
+from django.conf import settings
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
 
 import requests
 from rest_framework import generics, status
@@ -81,6 +85,10 @@ class CreateOrderView(generics.CreateAPIView):
 
             order_serializer = OrderSerializer(order, context={'request': request})
 
+            if email:
+                order_serializer = OrderSerializer(order, context={'request': request})
+                self.send_order_confirmation_email(email, order_serializer.data)
+
             # Вставляем сообщение о доставке внутрь объекта заказа
             if not is_pickup:
                 order_serializer.data['Доставка'] = "Уточните сумму доставки у оператора"
@@ -92,6 +100,21 @@ class CreateOrderView(generics.CreateAPIView):
 
         # Если пользователь не авторизован
         return Response({"error": "Authentication is required to create an order."}, status=status.HTTP_401_UNAUTHORIZED)
+
+    def send_order_confirmation_email(self, email, order_data):
+        # Формируем HTML сообщение для отправки
+        subject = 'Ваш заказ успешно создан'
+        html_message = render_to_string('order_confirmation_email.html', {'order': order_data})
+        plain_message = strip_tags(html_message)  # На случай, если почтовый клиент не поддерживает HTML
+
+        send_mail(
+            subject=subject,
+            message=plain_message,  # Обычный текст для клиента
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email],
+            fail_silently=False,
+            html_message=html_message  # HTML версия письма
+        )
 
 
 class OrderPreviewView(generics.GenericAPIView):

@@ -79,8 +79,10 @@ class Product(models.Model):
     category = models.ForeignKey(Category, on_delete=models.CASCADE, verbose_name=_('Категория'),
                                  related_name='products', blank=True, null=True)
     name = models.CharField(max_length=100, verbose_name=_('Название'))
+    slug = models.SlugField(max_length=100, unique=True, verbose_name=_('Ссылка'), blank=True,
+                            null=True)  # Добавляем поле slug
     description = models.TextField(verbose_name=_('Описание'), blank=True, null=True)
-    photo = models.FileField(upload_to='product_photos/', verbose_name=_('Фото'), blank=True, null=True)
+    photo = models.FileField(upload_to='product_photos/', verbose_name=_('Фото'))
     country = models.ForeignKey('Country', related_name='products', verbose_name=_('Страна'), blank=True, on_delete=models.CASCADE)
     bonuses = models.BooleanField(default=False, verbose_name=_('Можно оптатить бонусами'))
     tags = models.ManyToManyField('Tag', related_name='products', verbose_name=_('Теги'), blank=True)
@@ -140,6 +142,9 @@ class Product(models.Model):
                 os.remove(old_path)
 
     def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(unidecode(self.name))
+
         if self.category and self.category.has_subcategories():
             raise ValidationError(
                 _('Нельзя создавать продукт в категории, которая имеет подкатегории. Выберите конечную категорию.'))
