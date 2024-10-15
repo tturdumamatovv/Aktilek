@@ -324,7 +324,7 @@ class Characteristic(models.Model):
 class Review(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_reviews', verbose_name='Пользователь')
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='product_reviews', verbose_name='Продукт')
-    rating = models.PositiveIntegerField(default=5, verbose_name=_('Рейтинг'))
+    rating = models.FloatField(default=5.0, verbose_name=_('Рейтинг'))  # Изменено на FloatField
     comment = models.TextField(verbose_name=_('Комментарий'), blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True, verbose_name=_('Дата создания'))
 

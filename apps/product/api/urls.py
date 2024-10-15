@@ -12,7 +12,8 @@ from apps.product.api.views import (
     FavoriteProductsListView,
     ToggleFavoriteProductView,
     CreateReviewView,
-    ProductDetailView
+    ProductDetailView,
+    ReviewDeleteView
 )
 
 urlpatterns = [
@@ -28,4 +29,5 @@ urlpatterns = [
           path('favorites/', FavoriteProductsListView.as_view(), name='favorite-products'),
           path('reviews/create/', CreateReviewView.as_view(), name='create-review'),
           path('product/<int:id>/', ProductDetailView.as_view(), name='product-detail'),
+          path('reviews/<int:pk>/', ReviewDeleteView.as_view(), name='review-delete'),
 ]

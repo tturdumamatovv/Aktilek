@@ -80,6 +80,11 @@ class CreateOrderView(generics.CreateAPIView):
                 order.save()
 
             order_serializer = OrderSerializer(order, context={'request': request})
+
+            # Вставляем сообщение о доставке внутрь объекта заказа
+            if not is_pickup:
+                order_serializer.data['Доставка'] = "Уточните сумму доставки у оператора"
+
             return Response({
                 "message": "Order created successfully.",
                 "order": order_serializer.data

@@ -57,11 +57,17 @@ class ProductOrderItemSerializer(serializers.ModelSerializer):
     def get_product(self, obj):
         # Возвращает информацию о продукте
         product = obj.product_size.product
+        request = self.context.get('request')  # Получаем контекст запроса
+        image_url = product.photo.url if product.photo else None
+
+        if request and image_url:
+            image_url = request.build_absolute_uri(image_url)  # Строим полный URL
+
         return {
             'id': product.id,
             'name': product.name,
             'price': product.discounted_price if product.discounted_price else product.price,
-            'image': product.photo.url if product.photo else None
+            'image': image_url  # Возвращаем полный URL изображения
         }
 
     def get_color(self, obj):
@@ -124,16 +130,23 @@ class OrderSerializer(serializers.ModelSerializer):
     change = serializers.IntegerField(default=0)
     is_pickup = serializers.BooleanField(default=False)
     promo_code = serializers.CharField(required=False, allow_blank=True)
-    user_address_id = serializers.IntegerField(required=False, allow_null=True)  # Для авторизованного
+    user_address_id = serializers.IntegerField(required=False, allow_null=True)
+    delivery_info = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
         fields = [
-            'id', 'order_time', 'total_amount', 'is_pickup', 'user_address_id', 'order_status',
+            'id', 'order_time', 'total_amount', 'delivery_info', 'is_pickup', 'user_address_id', 'order_status',
             'products', 'payment_method', 'change', 'order_source', 'comment',
             'promo_code',
         ]
         read_only_fields = ['total_amount', 'order_time', 'order_status']
+
+    def get_delivery_info(self, obj):
+        # Условие для возврата информации о доставке
+        if not obj.is_pickup:
+            return "Уточните сумму доставки у оператора"
+        return None
 
     def validate(self, data):
         # Если заказ не самовывоз и пользователь авторизован, проверяем, что указан user_address_id

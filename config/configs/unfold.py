@@ -94,7 +94,7 @@ UNFOLD = {
                 ],
             },
             {
-                "title": _("Рестораны"),
+                "title": _("Заказы"),
                 "icon": "restaurant",
                 "collapsible": True,
                 "items": [

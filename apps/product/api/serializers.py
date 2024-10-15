@@ -79,9 +79,17 @@ class ProductSizeSerializer(serializers.ModelSerializer):
 
 
 class ReviewSerializer(serializers.ModelSerializer):
+    username = serializers.SerializerMethodField()  # Поле для полного имени пользователя
+
     class Meta:
         model = Review
-        fields = ['user', 'rating', 'comment', 'created_at']
+        fields = ['id', 'username', 'rating', 'comment', 'created_at']
+
+    def get_username(self, obj):
+        # Предполагаем, что у объекта user есть поле full_name
+        if obj.user and obj.user.full_name:
+            return obj.user.full_name  # Возвращаем полное имя пользователя
+        return "User"
 
 
 class CharacteristicSerializer(serializers.ModelSerializer):
@@ -159,8 +167,9 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     category_name = serializers.SerializerMethodField()
     is_favorite = serializers.SerializerMethodField()
     average_rating = serializers.SerializerMethodField()
-    reviews = ReviewSerializer(many=True, read_only=True, source='product_reviews')  # Предположим, что ReviewSerializer уже существует
-    characteristics = CharacteristicSerializer(many=True, read_only=True, source='product_characteristics')  # Предположим, что CharacteristicSerializer уже существует
+    review_count = serializers.SerializerMethodField()  # Новое поле для количества комментариев
+    reviews = ReviewSerializer(many=True, read_only=True, source='product_reviews')
+    characteristics = CharacteristicSerializer(many=True, read_only=True, source='product_characteristics')
     gender = GenderSerializer(read_only=True)
     country = CountrySerializer(read_only=True)
 
@@ -169,7 +178,8 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'description', 'photo', 'tags',
                   'price', 'discounted_price', 'bonus_price', 'product_sizes',
                   'category_slug', 'category_name', 'is_favorite',
-                  'reviews', 'characteristics', 'average_rating', 'gender', 'country']
+                  'reviews', 'characteristics', 'average_rating',
+                  'review_count', 'gender', 'country']  # Добавлено review_count
 
     def get_category_slug(self, obj):
         if obj.category:
@@ -192,6 +202,10 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
     def get_average_rating(self, obj):
         return round(obj.product_reviews.aggregate(Avg('rating'))['rating__avg'] or 0)
+
+    def get_review_count(self, obj):
+        # Подсчитываем количество комментариев, игнорируя пустые строки
+        return obj.product_reviews.exclude(comment='').count()
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
@@ -254,7 +268,6 @@ class CategoryProductSerializer(serializers.ModelSerializer):
     subcategories = serializers.SerializerMethodField()
     image = serializers.SerializerMethodField()
     filters = serializers.SerializerMethodField()
-    # sets = SetSerializer(many=True, read_only=True)
 
     class Meta:
         model = Category
@@ -277,8 +290,10 @@ class CategoryProductSerializer(serializers.ModelSerializer):
         products = Product.objects.filter(category=obj)
 
         # Минимальная и максимальная цена
-        price_min = products.aggregate(Min('discounted_price'))['discounted_price__min'] or products.aggregate(Min('price'))['price__min']
-        price_max = products.aggregate(Max('discounted_price'))['discounted_price__max'] or products.aggregate(Max('price'))['price__max']
+        price_min = products.aggregate(Min('discounted_price'))['discounted_price__min'] or \
+                    products.aggregate(Min('price'))['price__min']
+        price_max = products.aggregate(Max('discounted_price'))['discounted_price__max'] or \
+                    products.aggregate(Max('price'))['price__max']
 
         # Список доступных размеров
         sizes = list(set(products.values_list('product_sizes__sizes__name', flat=True)))
@@ -286,9 +301,12 @@ class CategoryProductSerializer(serializers.ModelSerializer):
         genders = list(set(products.values_list('gender__name', flat=True)))
         colors = list(set(products.values_list('product_sizes__color__name', flat=True)))
 
+        # Получаем все средние рейтинги для всех продуктов
+        average_ratings = list(
+            products.annotate(average_rating=Avg('product_reviews__rating')).values_list('average_rating', flat=True))
 
-        # Средний рейтинг
-        ratings = products.aggregate(average_rating=Avg('product_reviews__rating'))['average_rating'] or 0
+        # Убираем None и создаем уникальные значения
+        unique_ratings = set(filter(None, average_ratings))
 
         return {
             'price_min': price_min,
@@ -297,7 +315,7 @@ class CategoryProductSerializer(serializers.ModelSerializer):
             'countries': list(countries),
             'genders': list(genders),
             'colors': list(colors),
-            'average_rating': ratings
+            'average_ratings': list(unique_ratings)  # Возвращаем список уникальных рейтингов
         }
 
 
@@ -370,6 +388,14 @@ class ReviewCreateSerializer(serializers.ModelSerializer):
         # Проверка, чтобы пользователь не мог оставить более одного отзыва для одного продукта
         if Review.objects.filter(user=user, product=data['product']).exists():
             raise serializers.ValidationError("Вы уже оставляли отзыв на этот продукт.")
+
+        # Проверка диапазона рейтинга
+        rating = data.get('rating')
+        if rating is not None:
+            if rating < 0.0 or rating > 5.0:  # Проверка на диапазон для нецелых чисел
+                raise serializers.ValidationError("Рейтинг должен быть в диапазоне от 0 до 5.")
+            if not isinstance(rating, float):  # Проверка на тип
+                raise serializers.ValidationError("Рейтинг должен быть числом (можно с плавающей запятой).")
 
         return data
 

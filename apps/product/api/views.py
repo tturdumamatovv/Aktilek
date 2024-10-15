@@ -166,3 +166,16 @@ class CreateReviewView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+
+class ReviewDeleteView(generics.DestroyAPIView):
+    queryset = Review.objects.all()
+    permission_classes = [IsAuthenticated]  # Только авторизованные пользователи могут удалять отзывы
+
+    def delete(self, request, *args, **kwargs):
+        review = self.get_object()
+        if review.user != request.user:
+            return Response({"detail": "You do not have permission to delete this review."}, status=status.HTTP_403_FORBIDDEN)
+
+        review.delete()
+        return Response({"detail": "Review deleted successfully."}, status=status.HTTP_200_OK)

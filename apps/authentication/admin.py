@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
-from unfold.admin import TabularInline, ModelAdmin
+from unfold.admin import TabularInline, ModelAdmin, StackedInline
 
 from .models import User, UserAddress
 from apps.orders.models import Order
@@ -37,11 +37,11 @@ class OrderInline(TabularInline):
 
 
 @admin.register(UserAddress)
-class UserAddressAdmin(admin.ModelAdmin):
+class UserAddressAdmin(ModelAdmin):
     pass
 
 
-class UserAddressInline(admin.StackedInline):
+class UserAddressInline(StackedInline):
     model = UserAddress
     extra = 0
     classes = ['collapse']
