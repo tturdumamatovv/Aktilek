@@ -90,6 +90,7 @@ class Product(models.Model):
     discounted_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name=_('Цена со скидкой'),
                                            blank=True, null=True)
     bonus_price = models.DecimalField(default=0, max_digits=10, decimal_places=2, verbose_name=_('Цена бонусами'))
+    is_ordered = models.BooleanField(default=False, verbose_name='Заказан')
 
     class Meta:
         verbose_name = "Продукт"
@@ -335,3 +336,13 @@ class Review(models.Model):
 
     def __str__(self):
         return f"{self.user.phone_number} - {self.product.name} - {self.rating}/5"
+
+
+class ReviewImage(models.Model):
+    review = models.ForeignKey(Review, on_delete=models.CASCADE, related_name='images', verbose_name='Отзыв')
+    image = models.ImageField(upload_to='review_images/', verbose_name='Изображение')
+
+    class Meta:
+        verbose_name = "Изображение отзыва"
+        verbose_name_plural = "Изображения отзывов"
+

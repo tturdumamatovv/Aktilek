@@ -147,3 +147,46 @@ class CreateReOrderView(APIView):
             return Response(serializer.data)
         except Order.DoesNotExist:
             return Response({'error': 'Заказ не найден'}, status=status.HTTP_404_NOT_FOUND)
+
+    def post(self, request, order_id):
+        try:
+            order = Order.objects.get(id=order_id)
+
+            # Проверяем, принадлежит ли заказ текущему пользователю
+            if order.user != request.user:
+                return Response({'error': 'Вы не можете повторно заказать этот заказ.'},
+                                status=status.HTTP_403_FORBIDDEN)
+
+            # Проверка, нужен ли адрес
+            if not order.is_pickup and order.user_address:
+                user_address_id = order.user_address.id
+            else:
+                user_address_id = None
+
+            # Создание данных для нового заказа
+            order_data = {
+                'is_pickup': order.is_pickup,
+                'payment_method': order.payment_method,
+                'comment': order.comment,
+                'user_address_id': user_address_id,
+                'products': [{
+                    'product_size_id': item.product_size.id,
+                    'quantity': item.quantity,
+                    'color_id': item.color_id,
+                    'size_id': item.size_id,
+                    'is_bonus': item.is_bonus
+                } for item in order.order_items.all()]
+            }
+
+            # Создаем новый заказ
+            serializer = OrderSerializer(data=order_data, context={'request': request})
+            serializer.is_valid(raise_exception=True)
+            new_order = serializer.save(user=request.user)
+
+            return Response({
+                "message": "Order created successfully.",
+                "order": OrderSerializer(new_order, context={'request': request}).data
+            }, status=status.HTTP_201_CREATED)
+
+        except Order.DoesNotExist:
+            return Response({'error': 'Заказ не найден'}, status=status.HTTP_404_NOT_FOUND)

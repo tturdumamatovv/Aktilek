@@ -14,7 +14,7 @@ from apps.product.models import (
     ProductImage,
     Size,
     Country,
-    Gender
+    Gender, ReviewImage
 )
 
 
@@ -32,6 +32,12 @@ class ToppingSerializer(serializers.ModelSerializer):
         representation = super().to_representation(instance)
         representation['price'] = float(representation['price'])
         return representation
+
+
+class ReviewImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ReviewImage
+        fields = ['image']
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -80,16 +86,22 @@ class ProductSizeSerializer(serializers.ModelSerializer):
 
 class ReviewSerializer(serializers.ModelSerializer):
     username = serializers.SerializerMethodField()  # Поле для полного имени пользователя
+    images = ReviewImageSerializer(many=True, read_only=True)
+    created_at = serializers.SerializerMethodField()
 
     class Meta:
         model = Review
-        fields = ['id', 'username', 'rating', 'comment', 'created_at']
+        fields = ['id', 'username', 'rating', 'comment', 'created_at', 'images']
 
     def get_username(self, obj):
         # Предполагаем, что у объекта user есть поле full_name
         if obj.user and obj.user.full_name:
             return obj.user.full_name  # Возвращаем полное имя пользователя
         return "User"
+
+    def get_created_at(self, obj):
+        # Преобразуем дату в формат день/месяц/год
+        return obj.created_at.strftime('%d.%m.%Y')
 
 
 class CharacteristicSerializer(serializers.ModelSerializer):
@@ -117,12 +129,13 @@ class ProductSerializer(serializers.ModelSerializer):
     is_favorite = serializers.SerializerMethodField()
     average_rating = serializers.SerializerMethodField()
     photo = serializers.SerializerMethodField()
+    is_ordered = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Product
         fields = ['id', 'name', 'description', 'photo', 'tags',
                   'price', 'discounted_price', 'bonus_price',
-                  'category_slug', 'category_name', 'is_favorite', 'average_rating']
+                  'category_slug', 'category_name', 'is_favorite', 'average_rating', 'is_ordered']
 
     def get_photo(self, obj):
         request = self.context.get('request')
@@ -172,6 +185,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     characteristics = CharacteristicSerializer(many=True, read_only=True, source='product_characteristics')
     gender = GenderSerializer(read_only=True)
     country = CountrySerializer(read_only=True)
+    is_ordered = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Product
@@ -179,7 +193,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
                   'price', 'discounted_price', 'bonus_price', 'product_sizes',
                   'category_slug', 'category_name', 'is_favorite',
                   'reviews', 'characteristics', 'average_rating',
-                  'review_count', 'gender', 'country']  # Добавлено review_count
+                  'review_count', 'gender', 'country', 'is_ordered']  # Добавлено review_count
 
     def get_category_slug(self, obj):
         if obj.category:
@@ -268,10 +282,11 @@ class CategoryProductSerializer(serializers.ModelSerializer):
     subcategories = serializers.SerializerMethodField()
     image = serializers.SerializerMethodField()
     filters = serializers.SerializerMethodField()
+    parent_category = serializers.SerializerMethodField()  # Новое поле для родительской категории
 
     class Meta:
         model = Category
-        fields = ['id', 'name', 'description', 'slug', 'image', 'products', 'subcategories', 'filters']
+        fields = ['id', 'name', 'description', 'slug', 'image', 'parent_category', 'products', 'subcategories', 'filters']
 
     def get_image(self, obj):
         request = self.context.get('request')
@@ -317,6 +332,16 @@ class CategoryProductSerializer(serializers.ModelSerializer):
             'colors': list(colors),
             'average_ratings': list(unique_ratings)  # Возвращаем список уникальных рейтингов
         }
+
+    def get_parent_category(self, obj):
+        # Возвращаем данные родительской категории, если она существует
+        if obj.parent:
+            return {
+                'id': obj.parent.id,
+                'name': obj.parent.name,
+                'slug': obj.parent.slug,
+            }
+        return None
 
 
 class CategoryOnlySerializer(serializers.ModelSerializer):
@@ -377,30 +402,40 @@ class FavoriteProductSerializer(serializers.ModelSerializer):
 
 
 class ReviewCreateSerializer(serializers.ModelSerializer):
+    images = ReviewImageSerializer(many=True, required=False)  # Новое поле для изображений
+
     class Meta:
         model = Review
-        fields = ['rating', 'comment', 'product']
+        fields = ['rating', 'comment', 'product', 'images']
 
     def validate(self, data):
         request = self.context.get('request')
         user = request.user
 
         # Проверка, чтобы пользователь не мог оставить более одного отзыва для одного продукта
-        if Review.objects.filter(user=user, product=data['product']).exists():
-            raise serializers.ValidationError("Вы уже оставляли отзыв на этот продукт.")
+        # if Review.objects.filter(user=user, product=data['product']).exists():
+        #     raise serializers.ValidationError("Вы уже оставляли отзыв на этот продукт.")
 
         # Проверка диапазона рейтинга
         rating = data.get('rating')
         if rating is not None:
-            if rating < 0.0 or rating > 5.0:  # Проверка на диапазон для нецелых чисел
+            if rating < 0.0 or rating > 5.0:
                 raise serializers.ValidationError("Рейтинг должен быть в диапазоне от 0 до 5.")
-            if not isinstance(rating, float):  # Проверка на тип
+            if not isinstance(rating, float):
                 raise serializers.ValidationError("Рейтинг должен быть числом (можно с плавающей запятой).")
 
         return data
 
     def create(self, validated_data):
         request = self.context.get('request')
+        images = request.FILES.getlist('images')  # Получаем список файлов
+
         user = request.user
         validated_data['user'] = user
-        return super().create(validated_data)
+        review = super().create(validated_data)
+
+        # Сохранение изображений
+        for image in images:
+            ReviewImage.objects.create(review=review, image=image)  # Сохраняем каждое изображение
+
+        return review

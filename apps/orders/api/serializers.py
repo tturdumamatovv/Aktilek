@@ -206,6 +206,9 @@ class OrderSerializer(serializers.ModelSerializer):
                     is_bonus=product_data['is_bonus']
                 )
                 order_item.save()
+                product = Product.objects.get(id=product_data['product_size_id'])  # Получаем продукт
+                product.is_ordered = True  # Устанавливаем поле в True
+                product.save()
 
         return order
 
