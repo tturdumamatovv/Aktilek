@@ -14,7 +14,7 @@ from apps.product.models import (
     ProductImage,
     Size,
     Country,
-    Gender, ReviewImage
+    Gender, ReviewImage, SimilarProduct
 )
 
 
@@ -179,6 +179,65 @@ class ProductSerializer(serializers.ModelSerializer):
         return representation
 
 
+class ProductSimpleSerializer(serializers.ModelSerializer):
+    tags = TagSerializer(many=True)
+    category_slug = serializers.SerializerMethodField()
+    category_name = serializers.SerializerMethodField()
+    is_favorite = serializers.SerializerMethodField()
+    review_count = serializers.SerializerMethodField()
+    average_rating = serializers.SerializerMethodField()
+    photo = serializers.SerializerMethodField()
+    is_ordered = serializers.BooleanField(read_only=True)
+    is_active = serializers.BooleanField()
+
+    class Meta:
+        model = Product
+        fields = ['id', 'name', 'slug', 'description', 'photo', 'tags',
+                  'price', 'discounted_price', 'bonus_price',
+                  'category_slug', 'category_name', 'is_favorite',
+                  'average_rating', 'review_count', 'is_ordered', 'is_active']
+
+    def get_photo(self, obj):
+        request = self.context.get('request')
+        if obj.photo and request:
+            return request.build_absolute_uri(obj.photo.url)
+        return None
+
+    def get_category_slug(self, obj):
+        if obj.category:
+            return obj.category.slug
+        return None
+
+    def get_category_name(self, obj):
+        if obj.category:
+            return obj.category.name
+        return None
+
+    def get_is_favorite(self, obj):
+        request = self.context.get('request', None)
+        if request is None or not hasattr(request, 'user'):
+            return False
+        user = request.user
+        if user.is_authenticated:
+            return FavoriteProduct.objects.filter(user=user, product=obj).exists()
+        return False
+
+    def get_review_count(self, obj):
+        # Подсчитываем количество комментариев, игнорируя пустые строки
+        return obj.product_reviews.exclude(comment='').count()
+
+    def get_average_rating(self, obj):
+        return round(obj.product_reviews.aggregate(Avg('rating'))['rating__avg'] or 0)
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['price'] = float(representation['price']) if representation['price'] else None
+        representation['discounted_price'] = float(representation['discounted_price']) if representation[
+            'discounted_price'] else None
+        representation['bonus_price'] = float(representation['bonus_price']) if representation['bonus_price'] else None
+        return representation
+
+
 class ProductDetailSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True)
     product_sizes = ProductSizeSerializer(many=True, read_only=True)
@@ -194,6 +253,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     is_ordered = serializers.BooleanField(read_only=True)
     is_active = serializers.BooleanField()
     images = ProductImageSerializer(many=True, read_only=True)
+    similar_products = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -201,7 +261,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
                   'price', 'discounted_price', 'bonus_price', 'product_sizes',
                   'category_slug', 'category_name', 'is_favorite',
                   'reviews', 'characteristics', 'average_rating',
-                  'review_count', 'gender', 'country', 'is_ordered', 'is_active']  # Добавлено review_count
+                  'review_count', 'gender', 'country', 'is_ordered', 'is_active', 'similar_products']  # Добавлено review_count
 
     def get_category_slug(self, obj):
         if obj.category:
@@ -228,6 +288,12 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     def get_review_count(self, obj):
         # Подсчитываем количество комментариев, игнорируя пустые строки
         return obj.product_reviews.exclude(comment='').count()
+
+    def get_similar_products(self, obj):
+        # Получаем список похожих продуктов
+        similar_products = SimilarProduct.objects.filter(product=obj).values_list('similar_product', flat=True)
+        products = Product.objects.filter(id__in=similar_products)
+        return ProductSimpleSerializer(products, many=True).data
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)

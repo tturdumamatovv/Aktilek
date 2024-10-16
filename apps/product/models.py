@@ -355,3 +355,23 @@ class ReviewImage(models.Model):
         verbose_name = "Изображение отзыва"
         verbose_name_plural = "Изображения отзывов"
 
+
+class SimilarProduct(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='similar_products')
+    similar_product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='related_similar_products')
+
+    class Meta:
+        verbose_name = "Похожий продукт"
+        verbose_name_plural = "Похожие продукты"
+        constraints = [
+            models.UniqueConstraint(fields=['product', 'similar_product'], name='unique_similar_product')
+        ]
+
+    def __str__(self):
+        return f"{self.product.name} -> {self.similar_product.name}"
+
+    def clean(self):
+        # Проверяем, что продукт не равен похожему продукту
+        if self.product == self.similar_product:
+            raise ValidationError("Нельзя выбрать тот же продукт в качестве похожего.")
+

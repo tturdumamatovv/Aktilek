@@ -20,9 +20,9 @@ from .models import (
     Color,
     ProductImage,
     Country,
-    Gender
+    Gender, SimilarProduct
 )
-from .forms import ProductSizeForm, ProductAdminForm
+from .forms import ProductSizeForm, ProductAdminForm, SimilarProductInlineForm
 
 
 class ExcludeBaseFieldsMixin(ModelAdmin):
@@ -57,6 +57,13 @@ class ProductImageInline(TabularInline):
     model = ProductImage
     extra = 0
     fields = ('product', 'image', 'color')
+
+
+class SimilarProductInline(TabularInline):
+    model = SimilarProduct
+    form = SimilarProductInlineForm
+    fk_name = 'product'
+    extra = 1
 
 
 @admin.register(Color)
@@ -116,7 +123,7 @@ class ProductAdmin(SortableAdminMixin, ExcludeBaseFieldsMixin, TranslationAdmin)
     search_fields = ('name',)
     list_filter = ('category',)
     filter_horizontal = ('tags',)  # 'ingredients')
-    inlines = [ProductSizeInline, ProductImageInline, CharacteristicInline, ReviewInline]
+    inlines = [ProductSizeInline, ProductImageInline, CharacteristicInline, ReviewInline, SimilarProductInline]
     exclude_base_fields = ('name', 'description')
 
 
