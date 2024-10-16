@@ -22,6 +22,7 @@ from .serializers import (
     OrderListSerializer, PromoCodeSerializer, ReOrderSerializer
 )
 from ..freedompay import generate_signature
+from ...services.bonuces import calculate_bonus_points, apply_bonus_points
 
 PAYBOX_URL = config('PAYBOX_URL')
 PAYBOX_MERCHANT_ID = config('PAYBOX_MERCHANT_ID')
@@ -76,6 +77,10 @@ class CreateOrderView(generics.CreateAPIView):
                 order.save()
 
             order_serializer = OrderSerializer(order, context={'request': request})
+
+            # Начисление бонусов
+            bonus_points = calculate_bonus_points(order.total_amount, 0, request.data.get('order_source', 'unknown'))  # delivery_fee по умолчанию 0
+            apply_bonus_points(request.user, bonus_points)  # Применяем бонусы к пользователю
 
             if email:
                 self.send_order_confirmation_email(email, order_serializer.data)
@@ -245,6 +250,35 @@ class CreateReOrderView(APIView):
             serializer.is_valid(raise_exception=True)
             new_order = serializer.save(user=request.user)
 
+            # Начисление бонусов
+            bonus_points = calculate_bonus_points(new_order.total_amount, 0, request.data.get('order_source', 'unknown'))  # delivery_fee по умолчанию 0
+            apply_bonus_points(request.user, bonus_points)  # Применяем бонусы к пользователю
+
+            # Отправка уведомления о новом заказе
+            if order.user.email:  # Проверяем, есть ли у пользователя email
+                self.send_order_confirmation_email(order.user.email, serializer.data)
+
+            payment_method = request.data.get('payment_method', 'card')
+            if payment_method == 'card':
+                response = self.create_freedompay_payment(new_order, order.user.email, order.user.phone_number)
+                if response.status_code == 200:
+                    # Парсим XML ответ
+                    try:
+                        root = ET.fromstring(response.text)
+                        payment_url = root.find('pg_redirect_url').text  # Извлекаем URL для оплаты
+                    except ET.ParseError:
+                        return Response({"error": "Failed to parse payment gateway response."},
+                                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+                    return Response({
+                        "message": "Order created successfully.",
+                        "order": OrderSerializer(new_order, context={'request': request}).data,
+                        "payment_url": payment_url
+                    }, status=status.HTTP_201_CREATED)
+                else:
+                    return Response({"error": "Failed to initiate payment."},
+                                    status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
             return Response({
                 "message": "Order created successfully.",
                 "order": OrderSerializer(new_order, context={'request': request}).data
@@ -252,3 +286,48 @@ class CreateReOrderView(APIView):
 
         except Order.DoesNotExist:
             return Response({'error': 'Заказ не найден'}, status=status.HTTP_404_NOT_FOUND)
+
+    def create_freedompay_payment(self, order, email, phone_number):
+        url = f"{PAYBOX_URL}/init_payment.php"
+        amount = order.total_amount
+        order_id = order.id
+        params = {
+            'pg_merchant_id': PAYBOX_MERCHANT_ID,
+            'pg_order_id': order_id,
+            'pg_amount': amount,
+            'pg_currency': 'KGS',
+            'pg_description': f"Оплата заказа #{order_id}",
+            'pg_user_phone': phone_number,
+            'pg_user_contact_email': email,
+            'pg_result_url': 'http://localhost:8000/payment/result',
+            'pg_success_url': 'http://localhost:8000/payment/success',
+            'pg_failure_url': 'http://localhost:8000/payment/failure',
+            'pg_testing_mode': 1,
+            'pg_salt': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        }
+
+        # Генерация подписи
+        params['pg_sig'] = generate_signature(params, 'init_payment.php')
+
+        try:
+            response = requests.post(url, data=params)
+
+            return response
+
+        except requests.RequestException as e:
+            print(f"Ошибка при запросе к Paybox: {e}")
+            return Response({"error": "Failed to initiate payment."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def send_order_confirmation_email(self, email, order_data):
+        subject = 'Ваш заказ успешно создан'
+        html_message = render_to_string('order_confirmation_email.html', {'order': order_data})
+        plain_message = strip_tags(html_message)
+
+        send_mail(
+            subject=subject,
+            message=plain_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email],
+            fail_silently=False,
+            html_message=html_message
+        )

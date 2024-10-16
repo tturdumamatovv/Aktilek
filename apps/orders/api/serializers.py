@@ -29,10 +29,11 @@ class ProductOrderItemSerializer(serializers.ModelSerializer):
     product = serializers.SerializerMethodField(read_only=True)
     color = serializers.SerializerMethodField(read_only=True)
     size = serializers.SerializerMethodField(read_only=True)
+    images = serializers.SerializerMethodField(read_only=True)  # Новое поле для изображений
 
     class Meta:
         model = OrderItem
-        fields = ['product_size_id', 'quantity', 'is_bonus', 'product', 'color', 'size']
+        fields = ['product_size_id', 'quantity', 'is_bonus', 'product', 'color', 'size', 'images']  # Добавляем images
 
     def validate(self, data):
         product_size_id = data.get('product_size_id')
@@ -74,6 +75,14 @@ class ProductOrderItemSerializer(serializers.ModelSerializer):
             'name': size.name,
             'quantity': size.quantity
         }
+
+    def get_images(self, obj):
+        # Получаем изображения, связанные с ProductSize
+        images = ProductImage.objects.filter(product_size=obj.product_size)
+        request = self.context.get('request')  # Получаем контекст запроса
+        return [
+            request.build_absolute_uri(image.image.url) for image in images if image.image
+        ]
 
 
 class OrderListSerializer(serializers.ModelSerializer):
