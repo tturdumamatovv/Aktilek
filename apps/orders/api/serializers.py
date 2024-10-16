@@ -198,33 +198,37 @@ class OrderSerializer(serializers.ModelSerializer):
 
             # Добавляем продукты в заказ
             for product_data in products_data:
+                # Получаем ProductSize
+                product_size = ProductSize.objects.filter(id=product_data['product_size_id']).first()
+                if not product_size:
+                    raise serializers.ValidationError(
+                        f"ProductSize with id {product_data['product_size_id']} does not exist.")
+
                 # Получаем имя размера по его id
-                try:
-                    size = Size.objects.get(id=product_data['size_id'])
-                    size_name = size.name  # Получаем имя размера
-                except Size.DoesNotExist:
-                    size_name = "Размер не найден"
+                size_name = product_size.sizes.filter(id=product_data['size_id']).first()
+                if not size_name:
+                    raise serializers.ValidationError(
+                        f"Size with id {product_data['size_id']} does not exist for this product.")
 
                 # Получаем имя цвета по его id
-                try:
-                    color = Color.objects.get(id=product_data['color_id'])
-                    color_name = color.name  # Получаем имя цвета
-                except Color.DoesNotExist:
-                    color_name = "Цвет не найден"
+                color = product_size.color  # Получаем цвет напрямую из product_size
+                color_name = color.name if color else "Цвет не найден"
 
                 # Создаем OrderItem и сохраняем его с именами размера и цвета
                 order_item = OrderItem(
                     order=order,
                     product_size_id=product_data['product_size_id'],
                     size_id=product_data['size_id'],
-                    size_name=size_name,  # Сохраняем имя размера
-                    color_id=product_data['color_id'],
+                    size_name=size_name.name,  # Сохраняем имя размера
+                    color_id=color.id,  # Используем ID цвета из product_size
                     color_name=color_name,  # Сохраняем имя цвета
                     quantity=product_data['quantity'],
                     is_bonus=product_data['is_bonus']
                 )
                 order_item.save()
-                product = Product.objects.get(id=product_data['product_size_id'])  # Получаем продукт
+
+                # Обновляем статус продукта
+                product = product_size.product  # Получаем связанный продукт
                 product.is_ordered = True  # Устанавливаем поле в True
                 product.save()
 
