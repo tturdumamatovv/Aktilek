@@ -107,6 +107,15 @@ class CategoryOnlyListView(generics.ListAPIView):
         return Response(serializer.data)
 
 
+class PromotedCategoryListView(generics.ListAPIView):
+    serializer_class = CategoryOnlySerializer
+
+    def get_queryset(self):
+        # Получаем только категории, у которых is_promoted=True
+        return Category.objects.filter(is_promoted=True)
+
+
+
 class PopularProducts(generics.ListAPIView):
     serializer_class = ProductSerializer
 

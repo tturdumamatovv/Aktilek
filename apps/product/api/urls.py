@@ -14,7 +14,8 @@ from apps.product.api.views import (
     CreateReviewView,
     ProductDetailView,
     ReviewDeleteView,
-    ProductDetailBySlugView
+    ProductDetailBySlugView,
+    PromotedCategoryListView
 )
 
 urlpatterns = [
@@ -23,6 +24,7 @@ urlpatterns = [
           path('category/<slug:slug>/', ProductListByCategorySlugView.as_view(), name='category'),
           path('categories/', CategoryListView.as_view(), name='category-list'),
           path('categories/only/', CategoryOnlyListView.as_view(), name='category-only-list'),
+          path('promoted-categories/', PromotedCategoryListView.as_view(), name='promoted-categories'),
           path('popular/products/', PopularProducts.as_view(), name='popular-products'),
           path('check/products/', CheckProductSizes.as_view(), name='check-products'),
           path('new/products/', NewProducts.as_view(), name='popular-products'),

@@ -48,7 +48,8 @@ class Category(MPTTModel):
     order = models.PositiveIntegerField(default=0, editable=False, db_index=True)
     parent = TreeForeignKey('self', on_delete=models.CASCADE, related_name='subcategories',
                                verbose_name=_('Родительская категория'), blank=True, null=True)
-
+    is_promoted = models.BooleanField(default=False, verbose_name=_('Рекомендуемая'))
+    
     class MPTTMeta:
         order_insertion_by = ['name']
 
