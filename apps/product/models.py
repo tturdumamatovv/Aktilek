@@ -49,7 +49,7 @@ class Category(MPTTModel):
     parent = TreeForeignKey('self', on_delete=models.CASCADE, related_name='subcategories',
                                verbose_name=_('Родительская категория'), blank=True, null=True)
     is_promoted = models.BooleanField(default=False, verbose_name=_('Рекомендуемая'))
-    
+
     class MPTTMeta:
         order_insertion_by = ['name']
 
@@ -178,6 +178,21 @@ class ProductSize(models.Model):
 
     def __str__(self):
         return f"{self.product.name}"
+
+
+class ProductInventory(models.Model):
+    product_size = models.ForeignKey(ProductSize, on_delete=models.CASCADE, related_name='inventories', verbose_name=_("Продукт"))
+    size = models.ForeignKey(Size, on_delete=models.CASCADE, related_name='size_inventories', verbose_name=_("Размер"))
+    color = models.ForeignKey(Color, on_delete=models.CASCADE, related_name='color_inventories', verbose_name=_("Цвет"))
+    quantity = models.PositiveIntegerField(default=0, verbose_name=_('Количество'))
+
+    class Meta:
+        verbose_name = "Запас продукта"
+        verbose_name_plural = "Запасы продуктов"
+        unique_together = ('product_size', 'size', 'color')
+
+    def __str__(self):
+        return f"{self.product_size.product.name} - {self.color.name} - {self.size.name} - {self.quantity} шт."
 
 
 class Country(models.Model):

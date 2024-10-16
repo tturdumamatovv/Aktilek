@@ -14,7 +14,7 @@ from apps.product.models import (
     ProductImage,
     Size,
     Country,
-    Gender, ReviewImage
+    Gender, ReviewImage, ProductInventory
 )
 
 
@@ -62,9 +62,16 @@ class ProductImageSerializer(serializers.ModelSerializer):
 
 
 class SizeSerializer(serializers.ModelSerializer):
+    quantity = serializers.SerializerMethodField()
+
     class Meta:
         model = Size
-        fields = ['id', 'name']
+        fields = ['id', 'name', 'quantity']
+
+    def get_quantity(self, obj):
+        # Получаем общее количество для данного размера
+        inventory = ProductInventory.objects.filter(size=obj).first()
+        return inventory.quantity if inventory else 0
 
 
 class ProductSizeSerializer(serializers.ModelSerializer):

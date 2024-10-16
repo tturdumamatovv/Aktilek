@@ -19,7 +19,7 @@ from .models import (
     Color,
     ProductImage,
     Country,
-    Gender
+    Gender, ProductInventory
 )
 from .forms import ProductSizeForm, ProductAdminForm
 
@@ -38,6 +38,12 @@ class ExcludeBaseFieldsMixin(ModelAdmin):
 class SizeAdmin(ExcludeBaseFieldsMixin):
     list_display = ('name',)
     search_fields = ('name',)
+
+
+@admin.register(ProductInventory)
+class ProductInventoryAdmin(ExcludeBaseFieldsMixin):
+    list_display = ('product_size', 'color', 'size', 'quantity')
+    search_fields = ('product_size',)
 
 
 @admin.register(Gender)
@@ -83,7 +89,6 @@ class CharacteristicInline(TabularInline):
 class ReviewInline(TabularInline):
     model = Review
     extra = 0
-
 
 
 @admin.register(Category)

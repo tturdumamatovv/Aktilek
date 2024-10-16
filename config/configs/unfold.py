@@ -117,8 +117,13 @@ UNFOLD = {
                 "items": [
                     {
                         "title": _("Продукты"),
-                        "icon": "local_pizza",
+                        "icon": "laundry",
                         "link": reverse_lazy("admin:product_product_changelist"),
+                    },
+                    {
+                        "title": _("Запасы продуктов"),
+                        "icon": "shop",
+                        "link": reverse_lazy("admin:product_productinventory_changelist"),
                     },
                     {
                         "title": _("Категории"),
