@@ -73,7 +73,6 @@ class ProductOrderItemSerializer(serializers.ModelSerializer):
         return {
             'id': size.id,
             'name': size.name,
-            'quantity': size.quantity
         }
 
     def get_images(self, obj):
