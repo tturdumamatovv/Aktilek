@@ -30,7 +30,7 @@ class ProductFilter(django_filters.FilterSet):
     def filter_by_size(self, queryset, name, value):
         # Фильтруем продукты по размерам, связанным через таблицу `ProductSize`
         size_values = [s.strip() for s in value.split(',')]
-        return queryset.filter(product_sizes__sizes__name__in=size_values)
+        return queryset.filter(product_sizes__size__name__in=size_values).distinct()
 
     def filter_by_average_rating(self, queryset, name, value):
         # Фильтрация по среднему рейтингу отзывов на продукт

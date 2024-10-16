@@ -55,8 +55,8 @@ THIRD_PARTY_APPS = [
     'adminsortable2',
     'channels',
     'ckeditor',
-    'mptt'
-
+    'mptt',
+    'nested_admin'
 ]
 
 INSTALLED_APPS = [*DJANGO_APPS, *THIRD_PARTY_APPS, *PROJECT_APPS]

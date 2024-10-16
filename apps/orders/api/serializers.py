@@ -21,42 +21,31 @@ class ToppingSerializer(serializers.ModelSerializer):
 
 
 class ProductOrderItemSerializer(serializers.ModelSerializer):
-    product = serializers.SerializerMethodField(read_only=True)
     product_size_id = serializers.IntegerField(write_only=True)
-    color_id = serializers.IntegerField(write_only=True)
-    size_id = serializers.IntegerField(write_only=True)
-    color = serializers.SerializerMethodField(read_only=True)  # Поле для возврата выбранного цвета
-    size = serializers.SerializerMethodField(read_only=True)
     quantity = serializers.IntegerField(default=1)
     is_bonus = serializers.BooleanField(default=False)
 
+    # Новый метод для получения информации о продукте
+    product = serializers.SerializerMethodField(read_only=True)
+    color = serializers.SerializerMethodField(read_only=True)
+    size = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = OrderItem
-        fields = ['product_size_id', 'color_id', 'size_id', 'quantity', 'is_bonus', 'product', 'color', 'size']
+        fields = ['product_size_id', 'quantity', 'is_bonus', 'product', 'color', 'size']
 
     def validate(self, data):
-        # Проверка на наличие product_size
         product_size_id = data.get('product_size_id')
-        color_id = data.get('color_id')
-        size_id = data.get('size_id')
 
-        try:
-            product_size = ProductSize.objects.get(id=product_size_id)
-        except ProductSize.DoesNotExist:
+        product_size = ProductSize.objects.filter(id=product_size_id).first()
+        if not product_size:
             raise serializers.ValidationError(f"ProductSize with id {product_size_id} does not exist.")
-
-        # Проверка соответствия цвета и размера
-        if product_size.color.id != color_id:
-            raise serializers.ValidationError("The selected color does not match the product size.")
-
-        if not product_size.sizes.filter(id=size_id).exists():
-            raise serializers.ValidationError("The selected size does not match the product size.")
 
         return data
 
     def get_product(self, obj):
-        # Возвращает информацию о продукте
-        product = obj.product_size.product
+        product_size = obj.product_size  # Получаем ProductSize
+        product = product_size.product
         request = self.context.get('request')  # Получаем контекст запроса
         image_url = product.photo.url if product.photo else None
 
@@ -67,28 +56,24 @@ class ProductOrderItemSerializer(serializers.ModelSerializer):
             'id': product.id,
             'name': product.name,
             'price': product.discounted_price if product.discounted_price else product.price,
-            'image': image_url  # Возвращаем полный URL изображения
+            'image': image_url
         }
 
     def get_color(self, obj):
-        request = self.context.get('request')
         color = obj.product_size.color
-        images = ProductImage.objects.filter(color=color)
-        image_urls = [request.build_absolute_uri(image.image.url) for image in images if image.image and request]
-        # Возвращаем информацию о цвете
         return {
-            'id': obj.product_size.color.id,
-            'name': obj.product_size.color.name,
-            'hex_code': obj.product_size.color.hex_code,
-            'images': image_urls
+            'id': color.id,
+            'name': color.name,
+            'hex_code': color.hex_code,
         }
 
     def get_size(self, obj):
-        # Возвращаем только выбранный размер
-        chosen_size = obj.product_size.sizes.filter(id=obj.size_id).first()
-        if chosen_size:
-            return {'id': chosen_size.id, 'name': chosen_size.name}
-        return None
+        size = obj.product_size.size
+        return {
+            'id': size.id,
+            'name': size.name,
+            'quantity': size.quantity
+        }
 
 
 class OrderListSerializer(serializers.ModelSerializer):
@@ -130,7 +115,7 @@ class OrderListSerializer(serializers.ModelSerializer):
 
 
 class OrderSerializer(serializers.ModelSerializer):
-    products = ProductOrderItemSerializer(many=True, required=False)
+    products = ProductOrderItemSerializer(many=True, source='order_items', required=True)
     order_source = serializers.ChoiceField(choices=[('web', 'web'), ('mobile', 'mobile')], default='web')
     change = serializers.IntegerField(default=0)
     is_pickup = serializers.BooleanField(default=False)
@@ -149,42 +134,28 @@ class OrderSerializer(serializers.ModelSerializer):
         read_only_fields = ['total_amount', 'order_time', 'order_status']
 
     def get_delivery_info(self, obj):
-        # Условие для возврата информации о доставке
-        if not obj.is_pickup:
-            return "Уточните сумму доставки у оператора"
-        return None
+        return "Уточните сумму доставки у оператора" if not obj.is_pickup else None
 
     def get_warehouse_city(self, obj):
-        # Проверяем, является ли заказ самовывозом
         if obj.is_pickup:
-            try:
-                warehouse = Warehouse.objects.filter(is_primary=True).first()
-                if warehouse:
-                    return warehouse.city
-                return "Склад не найден"
-            except Warehouse.DoesNotExist:
-                return "Склад не найден"
+            warehouse = Warehouse.objects.filter(is_primary=True).first()
+            return warehouse.city if warehouse else "Склад не найден"
         return None
 
     def validate(self, data):
-        # Если заказ не самовывоз и пользователь авторизован, проверяем, что указан user_address_id
         if not data.get('is_pickup') and self.context['request'].user.is_authenticated:
             if not data.get('user_address_id'):
-                raise serializers.ValidationError({
-                    "user_address_id": "Адрес пользователя обязателен для курьерской доставки."
-                })
+                raise serializers.ValidationError({"user_address_id": "Адрес пользователя обязателен для курьерской доставки."})
         return data
 
     def create(self, validated_data):
-        products_data = validated_data.pop('products', [])
+        products_data = validated_data.pop('order_items', [])
         promo_code_data = validated_data.pop('promo_code', None)
         user_address_id = validated_data.pop('user_address_id', None)  # Адрес для авторизованного
 
-        # Save the order
         with transaction.atomic():
             order = Order.objects.create(**validated_data)
 
-            # Если адрес для авторизованного пользователя передан
             if user_address_id:
                 order.user_address_id = user_address_id
                 order.save()
@@ -198,39 +169,21 @@ class OrderSerializer(serializers.ModelSerializer):
 
             # Добавляем продукты в заказ
             for product_data in products_data:
-                # Получаем ProductSize
                 product_size = ProductSize.objects.filter(id=product_data['product_size_id']).first()
                 if not product_size:
-                    raise serializers.ValidationError(
-                        f"ProductSize with id {product_data['product_size_id']} does not exist.")
+                    raise serializers.ValidationError(f"ProductSize with id {product_data['product_size_id']} does not exist.")
 
-                # Получаем имя размера по его id
-                size_name = product_size.sizes.filter(id=product_data['size_id']).first()
-                if not size_name:
-                    raise serializers.ValidationError(
-                        f"Size with id {product_data['size_id']} does not exist for this product.")
-
-                # Получаем имя цвета по его id
-                color = product_size.color  # Получаем цвет напрямую из product_size
-                color_name = color.name if color else "Цвет не найден"
-
-                # Создаем OrderItem и сохраняем его с именами размера и цвета
                 order_item = OrderItem(
                     order=order,
-                    product_size_id=product_data['product_size_id'],
-                    size_id=product_data['size_id'],
-                    size_name=size_name.name,  # Сохраняем имя размера
-                    color_id=color.id,  # Используем ID цвета из product_size
-                    color_name=color_name,  # Сохраняем имя цвета
+                    product_size=product_size,
                     quantity=product_data['quantity'],
-                    is_bonus=product_data['is_bonus']
+                    is_bonus=product_data.get('is_bonus', False)
                 )
-                order_item.save()
+                order_item.save()  # Сохраняем элемент заказа
 
                 # Обновляем статус продукта
-                product = product_size.product  # Получаем связанный продукт
-                product.is_ordered = True  # Устанавливаем поле в True
-                product.save()
+                product_size.product.is_ordered = True
+                product_size.product.save()
 
         return order
 

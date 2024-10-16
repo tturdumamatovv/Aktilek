@@ -18,6 +18,7 @@ from apps.authentication.models import User
 
 class Size(models.Model):
     name = models.CharField(max_length=50, verbose_name=_('Название'))
+    quantity = models.IntegerField(default=0, verbose_name=_('Количество'))
 
     class Meta:
         verbose_name = "Размер"
@@ -75,6 +76,7 @@ class Category(MPTTModel):
 
 
 class Product(models.Model):
+    is_active = models.BooleanField(default=True, verbose_name=_('Активный'))
     is_popular = models.BooleanField(default=False, verbose_name=_('Популярный'))
     is_new = models.BooleanField(default=False, verbose_name=_('Новинка'))
     category = models.ForeignKey(Category, on_delete=models.CASCADE, verbose_name=_('Категория'),
@@ -170,29 +172,14 @@ class ProductSize(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='product_sizes',
                                 verbose_name=_('Продукт'))
     color = models.ForeignKey(Color, on_delete=models.CASCADE, related_name='product_colors', verbose_name=_('Цвета'))
-    sizes = models.ManyToManyField(Size, related_name='product_sizes', verbose_name=_('Размеры'))
+    size = models.ForeignKey(Size, related_name='product_sizes', verbose_name=_('Размеры'), on_delete=models.CASCADE)
 
     class Meta:
-        verbose_name = "Цена продукта по размеру"
-        verbose_name_plural = "Цены продуктов по размерам"
+        verbose_name = "Вариант продукта"
+        verbose_name_plural = "Вариант продуктов"
 
     def __str__(self):
         return f"{self.product.name}"
-
-
-class ProductInventory(models.Model):
-    product_size = models.ForeignKey(ProductSize, on_delete=models.CASCADE, related_name='inventories', verbose_name=_("Продукт"))
-    size = models.ForeignKey(Size, on_delete=models.CASCADE, related_name='size_inventories', verbose_name=_("Размер"))
-    color = models.ForeignKey(Color, on_delete=models.CASCADE, related_name='color_inventories', verbose_name=_("Цвет"))
-    quantity = models.PositiveIntegerField(default=0, verbose_name=_('Количество'))
-
-    class Meta:
-        verbose_name = "Запас продукта"
-        verbose_name_plural = "Запасы продуктов"
-        unique_together = ('product_size', 'size', 'color')
-
-    def __str__(self):
-        return f"{self.product_size.product.name} - {self.color.name} - {self.size.name} - {self.quantity} шт."
 
 
 class Country(models.Model):
@@ -278,7 +265,7 @@ class FavoriteProduct(models.Model):
 
 
 class ProductImage(models.Model):
-    color = models.ForeignKey(Color, on_delete=models.CASCADE, related_name='color_images', verbose_name=_('Цвет'))
+    product_size = models.ForeignKey(ProductSize, on_delete=models.CASCADE, related_name='color_images', verbose_name=_('Вариант'))  # Измените 'color' на 'product_size'
     image = models.FileField(upload_to='product_images/', verbose_name=_('Изображение'))
 
     class Meta:
@@ -286,7 +273,7 @@ class ProductImage(models.Model):
         verbose_name_plural = "Изображения продуктов"
 
     def __str__(self):
-        return f"{self.color.name}"
+        return f"{self.product_size.product.name} - {self.product_size.color.name}"  # Обновлено для отображения имени продукта и цвета
 
     def process_and_save_image(self):
         """Обрабатывает и сохраняет изображение, преобразуя его в формат .webp и изменяя размер."""

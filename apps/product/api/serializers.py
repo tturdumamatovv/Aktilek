@@ -14,7 +14,7 @@ from apps.product.models import (
     ProductImage,
     Size,
     Country,
-    Gender, ReviewImage, ProductInventory
+    Gender, ReviewImage
 )
 
 
@@ -51,7 +51,7 @@ class ProductImageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProductImage
-        fields = ['image', 'color']
+        fields = ['image', 'product_size']
 
     def get_image(self, obj):
         request = self.context.get('request')
@@ -62,33 +62,26 @@ class ProductImageSerializer(serializers.ModelSerializer):
 
 
 class SizeSerializer(serializers.ModelSerializer):
-    quantity = serializers.SerializerMethodField()
 
     class Meta:
         model = Size
         fields = ['id', 'name', 'quantity']
-
-    def get_quantity(self, obj):
-        # Получаем общее количество для данного размера
-        inventory = ProductInventory.objects.filter(size=obj).first()
-        return inventory.quantity if inventory else 0
 
 
 class ProductSizeSerializer(serializers.ModelSerializer):
     color_id = serializers.IntegerField(source='color.id')
     color_name = serializers.CharField(source='color.name')
     color_hex_code = serializers.CharField(source='color.hex_code')
-    sizes = SizeSerializer(many=True)
-    images = ProductImageSerializer(many=True, source='color.color_images')
+    size = SizeSerializer()  # Один размер
+    images = ProductImageSerializer(many=True, read_only=True, source='color_images')  # Извлечение изображений
 
     class Meta:
         model = ProductSize
-        fields = ['id', 'color_id', 'color_name', 'color_hex_code', 'images', 'sizes']
+        fields = ['id', 'color_id', 'color_name', 'color_hex_code', 'images', 'size']  # Добавляем поле images
 
     def get_images(self, obj):
-        # Получаем изображения, связанные с цветом
-        images = ProductImage.objects.filter(color=obj.color)
-        return ProductImageSerializer(images, many=True).data
+        # Теперь изображения получаются напрямую от ProductSize
+        return ProductImageSerializer(obj.color_images.all(), many=True, context=self.context).data
 
 
 class ReviewSerializer(serializers.ModelSerializer):
@@ -138,12 +131,14 @@ class ProductSerializer(serializers.ModelSerializer):
     average_rating = serializers.SerializerMethodField()
     photo = serializers.SerializerMethodField()
     is_ordered = serializers.BooleanField(read_only=True)
+    is_active = serializers.BooleanField()
 
     class Meta:
         model = Product
         fields = ['id', 'name', 'slug', 'description', 'photo', 'tags',
                   'price', 'discounted_price', 'bonus_price',
-                  'category_slug', 'category_name', 'is_favorite', 'average_rating', 'review_count', 'is_ordered']
+                  'category_slug', 'category_name', 'is_favorite',
+                  'average_rating', 'review_count', 'is_ordered', 'is_active']
 
     def get_photo(self, obj):
         request = self.context.get('request')
@@ -198,6 +193,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     gender = GenderSerializer(read_only=True)
     country = CountrySerializer(read_only=True)
     is_ordered = serializers.BooleanField(read_only=True)
+    is_active = serializers.BooleanField()
 
     class Meta:
         model = Product
@@ -205,7 +201,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
                   'price', 'discounted_price', 'bonus_price', 'product_sizes',
                   'category_slug', 'category_name', 'is_favorite',
                   'reviews', 'characteristics', 'average_rating',
-                  'review_count', 'gender', 'country', 'is_ordered']  # Добавлено review_count
+                  'review_count', 'gender', 'country', 'is_ordered', 'is_active']  # Добавлено review_count
 
     def get_category_slug(self, obj):
         if obj.category:
@@ -323,7 +319,7 @@ class CategoryProductSerializer(serializers.ModelSerializer):
                     products.aggregate(Max('price'))['price__max']
 
         # Список доступных размеров
-        sizes = list(set(products.values_list('product_sizes__sizes__name', flat=True)))
+        sizes = list(set(products.values_list('product_sizes__size__name', flat=True)))
         countries = list(set(products.values_list('country__name', flat=True)))
         genders = list(set(products.values_list('gender__name', flat=True)))
         colors = list(set(products.values_list('product_sizes__color__name', flat=True)))

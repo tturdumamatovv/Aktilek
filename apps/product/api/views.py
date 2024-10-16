@@ -28,7 +28,7 @@ from apps.product.models import (
 
 
 class ProductSearchView(generics.ListAPIView):
-    queryset = Product.objects.all()
+    queryset = Product.objects.filter(is_active=True)
     serializer_class = ProductSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_class = ProductFilter
@@ -64,17 +64,28 @@ class ProductBonusView(generics.ListAPIView):
 
 
 class ProductListByCategorySlugView(generics.ListAPIView):
-    def get(self, request, *args, **kwargs):
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = ProductFilter
+
+    def get_queryset(self):
         slug = self.kwargs['slug']
         try:
             category = Category.objects.get(slug=slug)
         except Category.DoesNotExist:
             raise NotFound("Категория не найдена")
 
-        serializer = CategoryProductSerializer(category, context={'request': request})
-        # set_serializer = SetSerializer(sets, many=True, context={'request': request})
+        # Возвращаем активные продукты, связанные с выбранной категорией
+        return Product.objects.filter(category=category, is_active=True), category  # Возвращаем также категорию
 
-        return Response(serializer.data)
+    def get(self, request, *args, **kwargs):
+        queryset, category = self.get_queryset()  # Получаем также категорию
+        filtered_queryset = self.filter_queryset(queryset)  # Применяем фильтры
+
+        serializer = CategoryProductSerializer(category, context={'request': request})
+        serializer_data = serializer.data
+        serializer_data['products'] = ProductSerializer(filtered_queryset, many=True, context={'request': request}).data
+
+        return Response(serializer_data)
 
 
 # class SetListView(generics.ListAPIView):

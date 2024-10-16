@@ -6,6 +6,7 @@ from unfold.admin import TabularInline, ModelAdmin
 from mptt.admin import DraggableMPTTAdmin
 from django.utils.html import format_html
 from modeltranslation.admin import TabbedTranslationAdmin
+from nested_admin import NestedTabularInline, NestedModelAdmin
 
 from .models import (
     Size,
@@ -19,7 +20,7 @@ from .models import (
     Color,
     ProductImage,
     Country,
-    Gender, ProductInventory
+    Gender
 )
 from .forms import ProductSizeForm, ProductAdminForm
 
@@ -40,12 +41,6 @@ class SizeAdmin(ExcludeBaseFieldsMixin):
     search_fields = ('name',)
 
 
-@admin.register(ProductInventory)
-class ProductInventoryAdmin(ExcludeBaseFieldsMixin):
-    list_display = ('product_size', 'color', 'size', 'quantity')
-    search_fields = ('product_size',)
-
-
 @admin.register(Gender)
 class GenderAdmin(ExcludeBaseFieldsMixin):
     list_display = ('name',)
@@ -53,9 +48,16 @@ class GenderAdmin(ExcludeBaseFieldsMixin):
     exclude_base_fields = ('name',)
 
 
-class ProductImageInline(TabularInline):
+@admin.register(ProductImage)
+class ProductImageAdmin(ExcludeBaseFieldsMixin, NestedModelAdmin):
+    list_display = ('product_size', 'image')
+    search_fields = ('product_size',)
+
+
+class ProductImageInline(NestedTabularInline, TabularInline):
     model = ProductImage
     extra = 0
+    fields = ('product_size', 'image')
 
 
 @admin.register(Color)
@@ -63,7 +65,6 @@ class ColorAdmin(ExcludeBaseFieldsMixin, TranslationAdmin):
     list_display = ('name', 'hex_code')
     search_fields = ('name',)
     exclude_base_fields = ('name',)
-    inlines = [ProductImageInline]
 
 
 @admin.register(Tag)
@@ -73,20 +74,21 @@ class TagAdmin(ExcludeBaseFieldsMixin, TranslationAdmin):
     exclude_base_fields = ('name',)
 
 
-class ProductSizeInline(TabularInline):
+class ProductSizeInline(NestedTabularInline, TabularInline):
     model = ProductSize
     form = ProductSizeForm
     extra = 0
-    filter_horizontal = ['sizes']
+    inlines = [ProductImageInline]  # Добавляем ProductImageInline сюда
 
 
-class CharacteristicInline(TabularInline):
+
+class CharacteristicInline(TabularInline, NestedTabularInline):
     model = Characteristic
     extra = 0
     exclude = ['name', 'value']
 
 
-class ReviewInline(TabularInline):
+class ReviewInline(TabularInline, NestedTabularInline):
     model = Review
     extra = 0
 
@@ -110,9 +112,9 @@ class CategoryAdmin(ModelAdmin, DraggableMPTTAdmin, TabbedTranslationAdmin):
 
 
 @admin.register(Product)
-class ProductAdmin(SortableAdminMixin, ExcludeBaseFieldsMixin, TranslationAdmin):
+class ProductAdmin(SortableAdminMixin, NestedModelAdmin, ExcludeBaseFieldsMixin, TranslationAdmin):
     form = ProductAdminForm
-    list_display = ('order', 'name', 'category', 'description')
+    list_display = ('order', 'name', 'category', 'description', 'is_active')
     search_fields = ('name',)
     list_filter = ('category',)
     filter_horizontal = ('tags',)  # 'ingredients')

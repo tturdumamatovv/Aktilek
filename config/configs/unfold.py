@@ -121,11 +121,6 @@ UNFOLD = {
                         "link": reverse_lazy("admin:product_product_changelist"),
                     },
                     {
-                        "title": _("Запасы продуктов"),
-                        "icon": "shop",
-                        "link": reverse_lazy("admin:product_productinventory_changelist"),
-                    },
-                    {
                         "title": _("Категории"),
                         "icon": "category",
                         "link": reverse_lazy("admin:product_category_changelist"),
@@ -134,6 +129,11 @@ UNFOLD = {
                         "title": _("Размеры"),
                         "icon": "straighten",
                         "link": reverse_lazy("admin:product_size_changelist"),
+                    },
+                    {
+                        "title": _("Цвета"),
+                        "icon": "colors",
+                        "link": reverse_lazy("admin:product_color_changelist"),
                     },
                     {
                         "title": _("Теги"),
