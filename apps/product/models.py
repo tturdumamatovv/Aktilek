@@ -265,15 +265,16 @@ class FavoriteProduct(models.Model):
 
 
 class ProductImage(models.Model):
-    product_size = models.ForeignKey(ProductSize, on_delete=models.CASCADE, related_name='color_images', verbose_name=_('Вариант'))  # Измените 'color' на 'product_size'
-    image = models.FileField(upload_to='product_images/', verbose_name=_('Изображение'))
+    image = models.ImageField(upload_to='product_images/', verbose_name=_("Изображение"))
+    product = models.ForeignKey(Product, related_name='images', on_delete=models.CASCADE, null=True, blank=True)
+    color = models.ForeignKey(Color, related_name='images', on_delete=models.PROTECT, verbose_name=_('Цвет'))
 
     class Meta:
         verbose_name = "Изображение продукта"
         verbose_name_plural = "Изображения продуктов"
 
     def __str__(self):
-        return f"{self.product_size.product.name} - {self.product_size.color.name}"  # Обновлено для отображения имени продукта и цвета
+        return f"{self.product.name} - {self.color.name}"  # Исправлено отображение названия продукта и цвета
 
     def process_and_save_image(self):
         """Обрабатывает и сохраняет изображение, преобразуя его в формат .webp и изменяя размер."""

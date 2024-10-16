@@ -114,6 +114,13 @@ class BannersView(ListAPIView):
     def get_serializer(self, *args, **kwargs):
         return BannerSerializer(*args, **kwargs, context={'request': self.request})
 
+    def get_queryset(self):
+        is_top = self.request.query_params.get('is_top', None)
+        queryset = super().get_queryset()
+        if is_top is not None:
+            queryset = queryset.filter(is_top=is_top.lower() == 'true')  # Фильтрация по is_top
+        return queryset
+
 
 class StoriesView(ListAPIView):
     queryset = Stories.objects.filter(is_active=True)

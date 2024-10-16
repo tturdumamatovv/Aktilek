@@ -76,11 +76,17 @@ class ProductOrderItemSerializer(serializers.ModelSerializer):
         }
 
     def get_images(self, obj):
-        # Получаем изображения, связанные с ProductSize
-        images = ProductImage.objects.filter(product_size=obj.product_size)
+        # Теперь изображения получаем из Product, а не из ProductSize
+        product = obj.product_size.product
+        images = ProductImage.objects.filter(product=product)  # Изображения связаны с Product
+
         request = self.context.get('request')  # Получаем контекст запроса
         return [
-            request.build_absolute_uri(image.image.url) for image in images if image.image
+            {
+                'image_url': request.build_absolute_uri(image.image.url) if request else image.image.url,
+                'color_id': image.color.id  # Добавляем color_id
+            }
+            for image in images if image.image
         ]
 
 
@@ -90,6 +96,7 @@ class OrderListSerializer(serializers.ModelSerializer):
     order_time = serializers.SerializerMethodField()
     user_address = serializers.SerializerMethodField()
     app_download_url = serializers.SerializerMethodField()
+    order_status = serializers.SerializerMethodField()  # Добавлено для статуса
 
     class Meta:
         model = Order
@@ -108,18 +115,26 @@ class OrderListSerializer(serializers.ModelSerializer):
         if obj.is_pickup:
             return "Самовывоз"
 
-        # Проверяем, связан ли заказ с пользователем и берем данные о номере телефона оттуда
         if obj.user:
-            return obj.user.phone_number  # Информация о пользователе через ForeignKey
+            return obj.user.phone_number
 
-        # Иначе проверяем, был ли указан адрес (для неавторизованных пользователей)
         if obj.user_address:
             return f"{obj.user_address.city}, {obj.user_address.apartment_number}"
 
         return "Адрес не указан"
 
     def get_app_download_url(self, obj):
-        return None  # Поле app_download_link было связано с моделью TelegramBotToken, которая была удалена
+        return None
+
+    def get_order_status(self, obj):
+        status_map = {
+            'pending': 'В ожидании',
+            'in_progress': 'В процессе',
+            'delivery': 'Доставка',
+            'completed': 'Завершено',
+            'cancelled': 'Отменено'
+        }
+        return status_map.get(obj.order_status, obj.order_status)  # Поле app_download_link было связано с моделью TelegramBotToken, которая была удалена
 
 
 class OrderSerializer(serializers.ModelSerializer):

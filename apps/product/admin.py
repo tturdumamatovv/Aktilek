@@ -50,14 +50,13 @@ class GenderAdmin(ExcludeBaseFieldsMixin):
 
 @admin.register(ProductImage)
 class ProductImageAdmin(ExcludeBaseFieldsMixin, NestedModelAdmin):
-    list_display = ('product_size', 'image')
-    search_fields = ('product_size',)
+    list_display = ('image',)
 
 
-class ProductImageInline(NestedTabularInline, TabularInline):
+class ProductImageInline(TabularInline):
     model = ProductImage
     extra = 0
-    fields = ('product_size', 'image')
+    fields = ('product', 'image', 'color')
 
 
 @admin.register(Color)
@@ -74,11 +73,10 @@ class TagAdmin(ExcludeBaseFieldsMixin, TranslationAdmin):
     exclude_base_fields = ('name',)
 
 
-class ProductSizeInline(NestedTabularInline, TabularInline):
+class ProductSizeInline(TabularInline):
     model = ProductSize
     form = ProductSizeForm
     extra = 0
-    inlines = [ProductImageInline]  # Добавляем ProductImageInline сюда
 
 
 
@@ -88,7 +86,7 @@ class CharacteristicInline(TabularInline, NestedTabularInline):
     exclude = ['name', 'value']
 
 
-class ReviewInline(TabularInline, NestedTabularInline):
+class ReviewInline(TabularInline):
     model = Review
     extra = 0
 
@@ -112,13 +110,13 @@ class CategoryAdmin(ModelAdmin, DraggableMPTTAdmin, TabbedTranslationAdmin):
 
 
 @admin.register(Product)
-class ProductAdmin(SortableAdminMixin, NestedModelAdmin, ExcludeBaseFieldsMixin, TranslationAdmin):
+class ProductAdmin(SortableAdminMixin, ExcludeBaseFieldsMixin, TranslationAdmin):
     form = ProductAdminForm
     list_display = ('order', 'name', 'category', 'description', 'is_active')
     search_fields = ('name',)
     list_filter = ('category',)
     filter_horizontal = ('tags',)  # 'ingredients')
-    inlines = [ProductSizeInline, CharacteristicInline, ReviewInline]
+    inlines = [ProductSizeInline, ProductImageInline, CharacteristicInline, ReviewInline]
     exclude_base_fields = ('name', 'description')
 
 

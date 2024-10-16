@@ -127,13 +127,14 @@ class OrderItem(models.Model):
 
     def calculate_total_amount(self):
         if not self.is_bonus:
-            product = self.product_size.product
+            product = self.product_size.product  # Получаем связанный продукт
             # Используем discounted_price, если оно есть, иначе обычную цену
             price = product.discounted_price if product.discounted_price else product.price
             total = self.quantity * price
             return total
         else:
-            total = self.quantity * self.product_size.bonus_price
+            # Получаем бонусную цену из продукта
+            total = self.quantity * self.product_size.product.bonus_price
             return total
 
     def save(self, *args, **kwargs):

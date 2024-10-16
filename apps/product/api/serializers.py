@@ -51,14 +51,13 @@ class ProductImageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProductImage
-        fields = ['image', 'product_size']
+        fields = ['image', 'color']
 
     def get_image(self, obj):
         request = self.context.get('request')
-        image_url = obj.image.url
         if request is not None:
-            return request.build_absolute_uri(image_url)
-        return image_url
+            return request.build_absolute_uri(obj.image.url)
+        return obj.image.url
 
 
 class SizeSerializer(serializers.ModelSerializer):
@@ -194,10 +193,11 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     country = CountrySerializer(read_only=True)
     is_ordered = serializers.BooleanField(read_only=True)
     is_active = serializers.BooleanField()
+    images = ProductImageSerializer(many=True, read_only=True)
 
     class Meta:
         model = Product
-        fields = ['id', 'name', 'slug', 'description', 'photo', 'tags',
+        fields = ['id', 'name', 'slug', 'description', 'photo', 'images', 'tags',
                   'price', 'discounted_price', 'bonus_price', 'product_sizes',
                   'category_slug', 'category_name', 'is_favorite',
                   'reviews', 'characteristics', 'average_rating',

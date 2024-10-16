@@ -128,11 +128,12 @@ class Banner(models.Model):
     type = models.CharField(verbose_name="Тип баннера", max_length=10, choices=TYPE_CHOICES, default='product')
     product = models.ForeignKey(Product, verbose_name="Продукт", on_delete=models.CASCADE, blank=True, null=True)
     category = models.ForeignKey(Category, verbose_name="Категория", on_delete=models.CASCADE, blank=True, null=True)
-    link = models.URLField(verbose_name="ссылка", max_length=200, blank=True, null=True)
+    link = models.URLField(verbose_name="Ссылка", max_length=200, blank=True, null=True)
     title = models.CharField(verbose_name="Заголовок", max_length=123, blank=True, null=True)
     image_desktop = models.ImageField(verbose_name="Картинка круп", upload_to="images/banners/desktop/%Y/%m/")
     image_mobile = models.ImageField(verbose_name="Картинка моб", upload_to="images/banners/mobile/%Y/%m/")
     is_active = models.BooleanField(verbose_name="Активный", default=True)
+    is_top = models.BooleanField(verbose_name="Верхний баннер", default=False)  # Новое поле
     created_at = models.DateTimeField(verbose_name="Дата создания", auto_now_add=True, blank=True, null=True)
 
     class Meta:

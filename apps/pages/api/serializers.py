@@ -27,7 +27,7 @@ class BannerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Banner
-        fields = ['title', 'type', 'image_desktop', 'image_mobile', 'link', 'is_active', 'created_at']
+        fields = ['title', 'type', 'image_desktop', 'image_mobile', 'link', 'is_active', 'is_top', 'created_at']
 
     def get_link(self, obj):
         if obj.type == 'category':

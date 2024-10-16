@@ -40,6 +40,7 @@ class BannerAdmin(ModelAdmin):
         "image_mobile",
         "get_image_mobile",
         "is_active",
+        "is_top",
         "created_at",
     )
     readonly_fields = ("get_image_desktop", "get_image_mobile", "created_at")
