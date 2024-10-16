@@ -13,17 +13,20 @@ class ProductFilter(django_filters.FilterSet):
     country = django_filters.CharFilter(field_name='country__name', lookup_expr='icontains')
     category = django_filters.CharFilter(method='filter_final_category')
 
-    # Используем MultipleChoiceFilter для фильтрации по полам
+    # Фильтрация по полу
     gender = django_filters.CharFilter(method='filter_by_gender')
 
-    # Используем CharFilter для фильтрации размеров через запятую
+    # Фильтрация по размеру через запятую
     size = django_filters.CharFilter(method='filter_by_size')
 
+    # Фильтрация по минимальной цене
     price_min = django_filters.NumberFilter(method='filter_by_min_price')
+
+    # Фильтрация по максимальной цене
     price_max = django_filters.NumberFilter(method='filter_by_max_price')
 
-    # Используем MultipleChoiceFilter для фильтрации по рейтингу
-    rating_min = django_filters.MultipleChoiceFilter(method='filter_by_average_rating')
+    # Фильтрация по минимальному рейтингу
+    rating_min = django_filters.CharFilter(method='filter_by_minimum_rating')  # Изменили на CharFilter для работы с массивом
 
     class Meta:
         model = Product
@@ -40,9 +43,11 @@ class ProductFilter(django_filters.FilterSet):
         gender_values = [g.strip() for g in value.split(',')]
         return queryset.filter(gender__name__in=gender_values).distinct()
 
-    def filter_by_average_rating(self, queryset, name, value):
-        rating_values = [float(r.strip()) for r in value.split(',')]  # Convert to float
-        return queryset.annotate(average_rating=Avg('product_reviews__rating')).filter(average_rating__gte=min(rating_values))
+    # Фильтрация по минимальному рейтингу, принимая массив значений через запятую
+    def filter_by_minimum_rating(self, queryset, name, value):
+        rating_values = [float(r.strip()) for r in value.split(',')]  # Преобразуем строковые значения в float
+        min_rating = min(rating_values)  # Находим минимальное значение рейтинга из массива
+        return queryset.annotate(average_rating=Avg('product_reviews__rating')).filter(average_rating__gte=min_rating)
 
     def filter_by_min_price(self, queryset, name, value):
         return queryset.filter(
