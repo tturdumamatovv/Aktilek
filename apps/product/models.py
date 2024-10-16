@@ -18,7 +18,6 @@ from apps.authentication.models import User
 
 class Size(models.Model):
     name = models.CharField(max_length=50, verbose_name=_('Название'))
-    quantity = models.IntegerField(default=0, verbose_name=_('Количество'))
 
     class Meta:
         verbose_name = "Размер"
@@ -173,6 +172,7 @@ class ProductSize(models.Model):
                                 verbose_name=_('Продукт'))
     color = models.ForeignKey(Color, on_delete=models.CASCADE, related_name='product_colors', verbose_name=_('Цвета'))
     size = models.ForeignKey(Size, related_name='product_sizes', verbose_name=_('Размеры'), on_delete=models.CASCADE)
+    quantity = models.IntegerField(default=0, verbose_name=_('Количество'))
 
     class Meta:
         verbose_name = "Вариант продукта"

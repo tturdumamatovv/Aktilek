@@ -65,19 +65,19 @@ class SizeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Size
-        fields = ['id', 'name', 'quantity']
+        fields = ['id', 'name']
 
 
 class ProductSizeSerializer(serializers.ModelSerializer):
     color_id = serializers.IntegerField(source='color.id')
     color_name = serializers.CharField(source='color.name')
     color_hex_code = serializers.CharField(source='color.hex_code')
-    size = SizeSerializer()  # Один размер
+    size = serializers.CharField(source='size.name')  # Один размер
     images = ProductImageSerializer(many=True, read_only=True, source='color_images')  # Извлечение изображений
 
     class Meta:
         model = ProductSize
-        fields = ['id', 'color_id', 'color_name', 'color_hex_code', 'images', 'size']  # Добавляем поле images
+        fields = ['id', 'color_id', 'color_name', 'color_hex_code', 'images', 'size', 'quantity']  # Добавляем поле images
 
     def get_images(self, obj):
         # Теперь изображения получаются напрямую от ProductSize
