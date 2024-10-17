@@ -46,8 +46,9 @@ class SendMessageView(generics.CreateAPIView):
         # Create and save the message
         message = serializer.save(chat=chat, sender=user, recipient=recipient, content=content, image=image)
 
+        image_url = self.request.build_absolute_uri(message.image.url) if message.image else None
         # Send message to Firebase
-        self.send_message_to_firebase(chat, message)
+        self.send_message_to_firebase(chat, message, image_url)
 
     def send_message_to_firebase(self, chat, message, image_url):
         from firebase_admin import firestore
