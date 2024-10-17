@@ -1,5 +1,3 @@
-from decimal import Decimal
-
 import pytz
 from django.db import transaction
 from django.conf import settings
@@ -181,71 +179,39 @@ class OrderSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         products_data = validated_data.pop('order_items', [])
         promo_code_data = validated_data.pop('promo_code', None)
-        user_address_id = validated_data.pop('user_address_id', None)
+        user_address_id = validated_data.pop('user_address_id', None)  # Адрес для авторизованного
 
         with transaction.atomic():
-            # Создаем заказ без расчета общей суммы
             order = Order.objects.create(**validated_data)
 
-            # Присваиваем адрес, если он был указан
             if user_address_id:
                 order.user_address_id = user_address_id
                 order.save()
 
-            # Добавляем продукты в заказ
-            total_amount = Decimal(0)
-            for product_data in products_data:
-                product_size = ProductSize.objects.filter(id=product_data['product_size_id']).first()
-                if not product_size:
-                    raise serializers.ValidationError(
-                        f"ProductSize with id {product_data['product_size_id']} does not exist.")
-
-                # Рассчитываем сумму для каждого элемента заказа
-                quantity = product_data['quantity']
-                price = product_size.product.discounted_price if product_size.product.discounted_price else product_size.product.price
-                total_item_amount = price * quantity
-
-                # Создаем элемент заказа и связываем его с заказом
-                order_item = OrderItem(
-                    order=order,
-                    product_size=product_size,
-                    quantity=quantity,
-                    total_amount=total_item_amount,
-                    is_bonus=product_data.get('is_bonus', False)
-                )
-                order_item.save()
-
-                # Обновляем общую сумму заказа
-                total_amount += total_item_amount
-
-                # Обновляем статус продукта
-                product_size.product.is_ordered = True
-                product_size.product.save()
-
-            # Применяем промокод, если указан, и пересчитываем итоговую сумму
             if promo_code_data:
                 promo_code_instance = PromoCode.objects.filter(code=promo_code_data).first()
                 if not promo_code_instance or not promo_code_instance.is_valid():
                     raise serializers.ValidationError({"promo_code": "Промокод недействителен или его срок истек."})
-
                 order.promo_code = promo_code_instance
-
-                # Применение промокода к итоговой сумме
-                if promo_code_instance.type == '%':
-                    discount = (Decimal(promo_code_instance.discount) / Decimal(100)) * total_amount
-                else:
-                    discount = Decimal(promo_code_instance.discount)
-
-                # Убеждаемся, что итоговая сумма не будет меньше 0
-                total_amount = max(total_amount - discount, Decimal(0))
-                order.total_amount = total_amount
-
                 order.save()
 
-            # Устанавливаем итоговую сумму заказа без промокода, если он не был применен
-            if not promo_code_data:
-                order.total_amount = total_amount
-                order.save()
+            # Добавляем продукты в заказ
+            for product_data in products_data:
+                product_size = ProductSize.objects.filter(id=product_data['product_size_id']).first()
+                if not product_size:
+                    raise serializers.ValidationError(f"ProductSize with id {product_data['product_size_id']} does not exist.")
+
+                order_item = OrderItem(
+                    order=order,
+                    product_size=product_size,
+                    quantity=product_data['quantity'],
+                    is_bonus=product_data.get('is_bonus', False)
+                )
+                order_item.save()  # Сохраняем элемент заказа
+
+                # Обновляем статус продукта
+                product_size.product.is_ordered = True
+                product_size.product.save()
 
         return order
 

@@ -62,25 +62,15 @@ class Order(models.Model):
         return f"Заказ #{self.id}"
 
     def apply_promo_code(self):
-        # Рассчитываем общую сумму, если она еще не установлена
-        if not self.total_amount:
-            self.total_amount = self.get_total_amount()
-
-        discount_amount = Decimal(0)  # Инициализируем скидку
-
         if self.promo_code and self.promo_code.is_valid():
             if self.promo_code.type == 'p':
-                # Если тип промокода процентный, рассчитываем процентную скидку
                 discount_rate = Decimal(self.promo_code.discount) / Decimal(100)
                 discount_amount = discount_rate * self.total_amount
             elif self.promo_code.type == 'f':
-                # Если тип промокода фиксированная сумма, берем фиксированную скидку
                 discount_amount = Decimal(self.promo_code.discount)
-
-            # Убедитесь, что скидка не превышает общую сумму
             discount_amount = min(discount_amount, self.total_amount)
-
-        return self.total_amount - discount_amount
+            return self.total_amount - discount_amount
+        return self.total_amount
 
     def get_total_amount(self):
         total_amount = Decimal(0)
