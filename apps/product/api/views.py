@@ -218,3 +218,13 @@ class ReviewDeleteView(generics.DestroyAPIView):
 
         review.delete()
         return Response({"detail": "Review deleted successfully."}, status=status.HTTP_200_OK)
+
+
+class UserReviewListView(generics.ListAPIView):
+    serializer_class = ReviewCreateSerializer  # Используем существующий сериализатор отзывов
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        # Возвращаем только те отзывы, которые создал текущий пользователь
+        return Review.objects.filter(user=self.request.user)
+

@@ -25,7 +25,7 @@ class ProductOrderItemSerializer(serializers.ModelSerializer):
     quantity = serializers.IntegerField(default=1)
     is_bonus = serializers.BooleanField(default=False)
 
-    # Новый метод для получения информации о продукте
+    # Поля для отображения информации о продукте
     product = serializers.SerializerMethodField(read_only=True)
     color = serializers.SerializerMethodField(read_only=True)
     size = serializers.SerializerMethodField(read_only=True)
@@ -33,7 +33,7 @@ class ProductOrderItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OrderItem
-        fields = ['product_size_id', 'quantity', 'is_bonus', 'product', 'color', 'size', 'images']  # Добавляем images
+        fields = ['product_size_id', 'quantity', 'is_bonus', 'product', 'color', 'size', 'images']
 
     def validate(self, data):
         product_size_id = data.get('product_size_id')
@@ -44,14 +44,22 @@ class ProductOrderItemSerializer(serializers.ModelSerializer):
 
         return data
 
+    def create(self, validated_data):
+        # Добавляем логику для сохранения color_name и size_name
+        product_size = ProductSize.objects.get(id=validated_data['product_size_id'])
+        validated_data['color_name'] = product_size.color.name
+        validated_data['size_name'] = product_size.size.name
+
+        return super().create(validated_data)
+
     def get_product(self, obj):
-        product_size = obj.product_size  # Получаем ProductSize
+        product_size = obj.product_size
         product = product_size.product
-        request = self.context.get('request')  # Получаем контекст запроса
+        request = self.context.get('request')
         image_url = product.photo.url if product.photo else None
 
         if request and image_url:
-            image_url = request.build_absolute_uri(image_url)  # Строим полный URL
+            image_url = request.build_absolute_uri(image_url)
 
         return {
             'id': product.id,
@@ -76,15 +84,14 @@ class ProductOrderItemSerializer(serializers.ModelSerializer):
         }
 
     def get_images(self, obj):
-        # Теперь изображения получаем из Product, а не из ProductSize
         product = obj.product_size.product
-        images = ProductImage.objects.filter(product=product)  # Изображения связаны с Product
+        images = ProductImage.objects.filter(product=product)
 
-        request = self.context.get('request')  # Получаем контекст запроса
+        request = self.context.get('request')
         return [
             {
                 'image_url': request.build_absolute_uri(image.image.url) if request else image.image.url,
-                'color_id': image.color.id  # Добавляем color_id
+                'color_id': image.color.id
             }
             for image in images if image.image
         ]

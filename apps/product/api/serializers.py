@@ -483,10 +483,11 @@ class FavoriteProductSerializer(serializers.ModelSerializer):
 
 class ReviewCreateSerializer(serializers.ModelSerializer):
     images = ReviewImageSerializer(many=True, required=False)  # Поле для изображений
+    created_at = serializers.SerializerMethodField()
 
     class Meta:
         model = Review
-        fields = ['rating', 'comment', 'product', 'images']
+        fields = ['rating', 'comment', 'product', 'images', 'created_at']
 
     def validate(self, data):
         request = self.context.get('request')
@@ -506,6 +507,10 @@ class ReviewCreateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("Рейтинг должен быть числом (можно с плавающей запятой).")
 
         return data
+
+    def get_created_at(self, obj):
+        # Форматируем дату в виде день.месяц.год
+        return obj.created_at.strftime('%d.%m.%Y')
 
     def create(self, validated_data):
         request = self.context.get('request')
