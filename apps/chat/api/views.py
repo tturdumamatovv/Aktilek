@@ -6,6 +6,8 @@ from apps.chat.models import Chat, Message
 from .serializers import ChatSerializer, MessageSerializer
 from ...authentication.models import User
 
+from firebase_admin import storage
+
 from django.utils import timezone
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -18,6 +20,19 @@ class ChatListView(generics.ListAPIView):
     def get_queryset(self):
         user = self.request.user
         return Chat.objects.filter(user=user) if not user.is_staff else Chat.objects.all()
+
+
+def upload_image_to_firebase(image):
+    # Указываем путь в Firebase Storage, куда загружаем изображение
+    bucket = storage.bucket()
+    blob = bucket.blob(f"message_images/{image.name}")
+
+    # Загружаем файл в Firebase Storage
+    blob.upload_from_file(image)
+
+    # Делаем объект публично доступным и получаем его URL
+    blob.make_public()
+    return blob.public_url
 
 
 class SendMessageView(generics.CreateAPIView):
@@ -43,11 +58,15 @@ class SendMessageView(generics.CreateAPIView):
         if not chat:
             chat = Chat.objects.create(user=recipient, admin=admin)
 
+        # If image exists, upload it to Firebase Storage and get the URL
+        image_url = None
+        if image:
+            image_url = upload_image_to_firebase(image)
+
         # Create and save the message
         message = serializer.save(chat=chat, sender=user, recipient=recipient, content=content, image=image)
 
-        image_url = self.request.build_absolute_uri(message.image.url) if message.image else None
-        # Send message to Firebase
+        # Send message to Firebase with the uploaded image URL
         self.send_message_to_firebase(chat, message, image_url)
 
     def send_message_to_firebase(self, chat, message, image_url):
@@ -58,14 +77,14 @@ class SendMessageView(generics.CreateAPIView):
         sender_full_name = message.sender.full_name if message.sender.full_name else message.sender.phone_number
         recipient_full_name = message.recipient.full_name if message.recipient.full_name else message.recipient.phone_number
 
-        # Structure for the message that includes full names
+        # Structure for the message that includes full names and Firebase image URL
         message_data = {
             'sender_full_name': sender_full_name,
             'recipient_full_name': recipient_full_name,
             'sender_id': message.sender.id,
             'recipient_id': message.recipient.id,
             'content': message.content,
-            'image_url': image_url,  # Use the full URL here
+            'image_url': image_url,  # Using the Firebase URL here
             'timestamp': message.timestamp
         }
 
