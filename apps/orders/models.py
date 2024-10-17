@@ -62,6 +62,7 @@ class Order(models.Model):
         return f"Заказ #{self.id}"
 
     def apply_promo_code(self):
+        discount_amount = Decimal(0)  # Инициализируем переменную
         if self.promo_code and self.promo_code.is_valid():
             if self.promo_code.type == 'p':
                 discount_rate = Decimal(self.promo_code.discount) / Decimal(100)
@@ -69,8 +70,7 @@ class Order(models.Model):
             elif self.promo_code.type == 'f':
                 discount_amount = Decimal(self.promo_code.discount)
             discount_amount = min(discount_amount, self.total_amount)
-            return self.total_amount - discount_amount
-        return self.total_amount
+        return self.total_amount - discount_amount
 
     def get_total_amount(self):
         total_amount = Decimal(0)
