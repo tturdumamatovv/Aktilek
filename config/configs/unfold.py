@@ -91,6 +91,11 @@ UNFOLD = {
                         "icon": "person",
                         "link": reverse_lazy("admin:authentication_user_changelist"),
                     },
+                    {
+                        "title": _("Чаты"),
+                        "icon": "chat",
+                        "link": reverse_lazy("admin:chat_chat_changelist"),
+                    },
                 ],
             },
             {
