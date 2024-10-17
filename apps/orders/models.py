@@ -6,7 +6,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from apps.pages.models import SingletonModel
-from apps.product.models import ProductSize, Topping, Size, Color
+from apps.product.models import ProductSize, Topping, Size
 
 
 class Order(models.Model):
@@ -112,25 +112,14 @@ class OrderItem(models.Model):
         return f"Товар - {self.size_name if self.size_name else 'Размер не указан'} - {self.quantity} шт."
 
     def save(self, *args, **kwargs):
-        # Проверяем, есть ли size_id, и сохраняем название размера
-        if self.size_id:
-            try:
-                size = Size.objects.get(id=self.size_id)
-                self.size_name = size.name  # Сохраняем название размера в поле size_name
-            except Size.DoesNotExist:
-                self.size_name = "Размер не найден"
-        else:
-            self.size_name = "Размер не указан"  # На случай отсутствия size_id
+        if self.product_size:
+            # Сохраняем название размера
+            self.size_name = self.product_size.size.name if self.product_size.size else "Размер не указан"
+            self.size_id = self.product_size.size.id if self.product_size.size else None
 
-        # Аналогично для color_name
-        if self.color_id:
-            try:
-                color = Color.objects.get(id=self.color_id)
-                self.color_name = color.name  # Сохраняем название цвета
-            except Color.DoesNotExist:
-                self.color_name = "Цвет не найден"
-        else:
-            self.color_name = "Цвет не указан"
+            # Сохраняем название и ID цвета
+            self.color_name = self.product_size.color.name if self.product_size.color else "Цвет не указан"
+            self.color_id = self.product_size.color.id if self.product_size.color else None
 
         # Вызываем родительский метод save
         super().save(*args, **kwargs)
