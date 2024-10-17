@@ -24,8 +24,6 @@ class ProductOrderItemSerializer(serializers.ModelSerializer):
     product_size_id = serializers.IntegerField(write_only=True)
     quantity = serializers.IntegerField(default=1)
     is_bonus = serializers.BooleanField(default=False)
-
-    # Поля для отображения информации о продукте
     product = serializers.SerializerMethodField(read_only=True)
     color = serializers.SerializerMethodField(read_only=True)
     size = serializers.SerializerMethodField(read_only=True)

@@ -20,6 +20,15 @@ class OrderItemInline(TabularInline):
     exclude = ['size_id', 'color_id']
     readonly_fields = ['product_size', 'size_name', 'color_name', 'quantity', 'total_amount', 'is_bonus']
 
+    def display_size_name(self, obj):
+        return obj.size_name if obj.size_name else "Размер не указан"
+
+    def display_color_name(self, obj):
+        return obj.color_name if obj.color_name else "Цвет не указан"
+
+    display_size_name.short_description = "Название размера"
+    display_color_name.short_description = "Название цвета"
+
 
 @admin.register(Order)
 class OrderAdmin(ModelAdmin):
