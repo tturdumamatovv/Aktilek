@@ -141,19 +141,27 @@ class NewProducts(generics.ListAPIView):
         return Product.objects.filter(is_new=True)
 
 
-class CheckProductSizes(APIView):
-    def post(self, request):
-        serializer = ProductSizeIdListSerializer(data=request.data)
+class CheckProductSizes(generics.GenericAPIView):
+    serializer_class = ProductSizeIdListSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             size_ids = serializer.validated_data['sizes']
             sizes = ProductSize.objects.filter(id__in=size_ids).select_related('product', 'size')
-            response_data = {size.id: size.id for size in sizes}
 
+            # Подготовка данных с True/False
+            response_data = {}
+            for size in sizes:
+                response_data[size.id] = size.quantity > 0
+
+            # Проверяем отсутствующие размеры
             missing_sizes = set(size_ids) - set(response_data.keys())
-            response_data.update({size_id: None for size_id in missing_sizes})
+            response_data.update({size_id: False for size_id in missing_sizes})
 
-            return Response(response_data)
-        return Response(serializer.errors, status=400)
+            return Response(response_data, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ToggleFavoriteProductView(generics.GenericAPIView):

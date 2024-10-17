@@ -102,6 +102,7 @@ class ReviewInline(TabularInline):
 class CategoryAdmin(ModelAdmin, DraggableMPTTAdmin, TabbedTranslationAdmin):
     search_fields = ('name',)
     exclude_base_fields = ('name', 'description')
+    exclude = ('slug',)
 
     def indented_title(self, obj):
         return format_html(
@@ -125,6 +126,7 @@ class ProductAdmin(SortableAdminMixin, ExcludeBaseFieldsMixin, TranslationAdmin)
     filter_horizontal = ('tags',)  # 'ingredients')
     inlines = [ProductSizeInline, ProductImageInline, CharacteristicInline, ReviewInline, SimilarProductInline]
     exclude_base_fields = ('name', 'description')
+    exclude = ('slug',)
 
 
 @admin.register(Topping)

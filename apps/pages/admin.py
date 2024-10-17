@@ -18,7 +18,9 @@ from apps.pages.models import (
     Stories,
     Story,
     SiteSettings,
-    BonusPage, Advertisement, News
+    BonusPage,
+    Advertisement,
+    News
 )
 from apps.services.firebase_notification import send_firebase_notification
 
@@ -117,7 +119,7 @@ class MethodsOfPaymentInline(TabularInline):
 @admin.register(MainPage)
 class MainPageAdmin(ModelAdmin):
     list_display = ('phone', 'icon', 'meta_title', 'meta_description', 'meta_image')
-    inlines = [OrderTypesInline, DeliveryConditionsInline, MethodsOfPaymentInline]
+    inlines = [MethodsOfPaymentInline]
 
 
 class StoryInline(TabularInline):

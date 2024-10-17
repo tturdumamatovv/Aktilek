@@ -89,9 +89,9 @@ class DeliveryConditions(models.Model):
 
 class MethodsOfPayment(models.Model):
     page = models.ForeignKey(MainPage, related_name='methods_of_payment', on_delete=models.CASCADE)
-    image = models.ImageField(verbose_name=_("Изображение"), blank=True, null=True)
     title = models.CharField(max_length=255, verbose_name=_("Заголовок"))
-    description = models.TextField(verbose_name=_("Описание"))
+    description = RichTextField(verbose_name=_("Описание"))
+    online_payment = models.BooleanField(default=True, verbose_name=_("Оплата онлайн"))
 
     class Meta:
         verbose_name = _("Способ оплаты")
@@ -116,7 +116,17 @@ class StaticPage(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(unidecode(self.title))
+            base_slug = slugify(unidecode(self.title))
+            slug = base_slug
+            counter = 1
+
+            # Проверяем, существует ли уже такой slug
+            while StaticPage.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+
+            self.slug = slug
+
         super().save(*args, **kwargs)
 
 
