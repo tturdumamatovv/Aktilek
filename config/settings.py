@@ -13,7 +13,9 @@ from .configs.unfold import *
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 cred = credentials.Certificate(os.path.join(BASE_DIR, 'aktilek-d3e26-firebase-adminsdk-a8doe-b2dd9088cf.json'))
-firebase_admin.initialize_app(cred)
+firebase_admin.initialize_app(cred, {
+    'storageBucket': 'aktilek-d3e26.appspot.com'
+})
 
 SECRET_KEY = config('SECRET_KEY')
 
