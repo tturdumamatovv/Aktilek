@@ -4,10 +4,16 @@ from datetime import timedelta
 from pathlib import Path
 from decouple import config
 
+import firebase_admin
+from firebase_admin import credentials
+
 from django.utils.translation import gettext_lazy as _
 from .configs.unfold import *
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+cred = credentials.Certificate(os.path.join(BASE_DIR, 'aktilek-d3e26-firebase-adminsdk-a8doe-b2dd9088cf.json'))
+firebase_admin.initialize_app(cred)
 
 SECRET_KEY = config('SECRET_KEY')
 
@@ -44,6 +50,7 @@ DJANGO_APPS = [
     'apps.orders',
     'apps.pages',
     'apps.support_admin_chat',
+    'apps.chat',
 ]
 
 THIRD_PARTY_APPS = [

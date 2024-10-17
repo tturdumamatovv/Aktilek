@@ -22,6 +22,7 @@ from apps.authentication.utils import (
     send_sms,
     generate_confirmation_code
 )
+from ...chat.models import Chat
 
 
 class UserBonusView(generics.GenericAPIView):
@@ -102,11 +103,19 @@ class VerifyCodeView(generics.CreateAPIView):
 
         refresh = RefreshToken.for_user(user)
         access_token = str(refresh.access_token)
+        admin = User.objects.filter(is_superuser=True).first()  # Получаем первого администратора
+        chat_id = None  # Переменная для хранения ID чата
+
+        if admin:
+            chat, created = Chat.objects.get_or_create(user=user, admin=admin)
+            chat_id = chat.id
 
         return Response({
             'access_token': access_token,
             'refresh_token': str(refresh),
-            'first_visit': user.first_visit
+            'first_visit': user.first_visit,
+            'user_id': user.id,
+            'chat_id': chat_id
         }, status=status.HTTP_200_OK)
 
 
