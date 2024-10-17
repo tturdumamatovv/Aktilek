@@ -189,6 +189,11 @@ UNFOLD = {
                         "icon": "settings",
                         "link": reverse_lazy("admin:orders_percentcashback_changelist"),
                     },
+                    {
+                        "title": _("Промо Код"),
+                        "icon": "settings",
+                        "link": reverse_lazy("admin:orders_promocode_changelist"),
+                    },
                 ],
             },
         ],
