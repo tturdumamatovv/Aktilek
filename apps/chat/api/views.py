@@ -49,7 +49,7 @@ class SendMessageView(generics.CreateAPIView):
         # Send message to Firebase
         self.send_message_to_firebase(chat, message)
 
-    def send_message_to_firebase(self, chat, message):
+    def send_message_to_firebase(self, chat, message, image_url):
         from firebase_admin import firestore
         db = firestore.client()
 
@@ -64,16 +64,12 @@ class SendMessageView(generics.CreateAPIView):
             'sender_id': message.sender.id,
             'recipient_id': message.recipient.id,
             'content': message.content,
-            'image_url': message.image.url if message.image else None,
+            'image_url': image_url,  # Use the full URL here
             'timestamp': message.timestamp
         }
 
         # Save the message to Firestore
         db.collection('chats').document(str(chat.id)).collection('messages').add(message_data)
-
-        # Save sender and recipient info in Firestore (if not already saved)
-        self.save_user_to_firestore(message.sender)
-        self.save_user_to_firestore(message.recipient)
 
     def save_user_to_firestore(self, user):
         from firebase_admin import firestore
