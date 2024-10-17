@@ -481,13 +481,38 @@ class FavoriteProductSerializer(serializers.ModelSerializer):
         return True
 
 
+class ProductShortSerializer(serializers.ModelSerializer):
+    review_count = serializers.SerializerMethodField()
+    average_rating = serializers.SerializerMethodField()
+    photo = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Product
+        fields = ['id', 'name', 'description', 'photo', 'average_rating', 'review_count']
+
+    def get_photo(self, obj):
+        request = self.context.get('request')
+        if obj.photo and request:
+            return request.build_absolute_uri(obj.photo.url)
+        return None
+
+    def get_review_count(self, obj):
+        # Подсчитываем количество комментариев, игнорируя пустые строки
+        return obj.product_reviews.exclude(comment='').count()
+
+    def get_average_rating(self, obj):
+        return round(obj.product_reviews.aggregate(Avg('rating'))['rating__avg'] or 0)
+
+
+
 class ReviewCreateSerializer(serializers.ModelSerializer):
     images = ReviewImageSerializer(many=True, required=False)  # Поле для изображений
     created_at = serializers.SerializerMethodField()
+    product = ProductShortSerializer(read_only=True)
 
     class Meta:
         model = Review
-        fields = ['rating', 'comment', 'product', 'images', 'created_at']
+        fields = ['id', 'rating', 'comment', 'product', 'images', 'created_at']
 
     def validate(self, data):
         request = self.context.get('request')

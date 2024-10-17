@@ -228,6 +228,7 @@ class ReviewDeleteView(generics.DestroyAPIView):
         return Response({"detail": "Review deleted successfully."}, status=status.HTTP_200_OK)
 
 
+
 class UserReviewListView(generics.ListAPIView):
     serializer_class = ReviewCreateSerializer  # Используем существующий сериализатор отзывов
     permission_classes = [permissions.IsAuthenticated]
