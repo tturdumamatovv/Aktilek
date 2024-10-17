@@ -180,6 +180,7 @@ class OrderSerializer(serializers.ModelSerializer):
         products_data = validated_data.pop('order_items', [])
         promo_code_data = validated_data.pop('promo_code', None)
         user_address_id = validated_data.pop('user_address_id', None)  # Адрес для авторизованного
+        order = Order.objects.create(**validated_data)
 
         with transaction.atomic():
             order = Order.objects.create(**validated_data)
