@@ -6,6 +6,7 @@ from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
 from ckeditor.fields import RichTextField
+from unidecode import unidecode
 
 from apps.authentication.models import User
 from apps.product.models import Product, Category
@@ -115,7 +116,7 @@ class StaticPage(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.title)
+            self.slug = slugify(unidecode(self.title))
         super().save(*args, **kwargs)
 
 
