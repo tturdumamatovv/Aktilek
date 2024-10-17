@@ -43,27 +43,12 @@ class ProductOrderItemSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
+        # Добавляем логику для сохранения color_name и size_name
         product_size = ProductSize.objects.get(id=validated_data['product_size_id'])
-
-        # Явно передаем color_name и size_name в validated_data
         validated_data['color_name'] = product_size.color.name
         validated_data['size_name'] = product_size.size.name
-        validated_data['color_id'] = product_size.color.id
-        validated_data['size_id'] = product_size.size.id
 
-        # Создаем элемент заказа с явным указанием этих полей
-        order_item = OrderItem.objects.create(
-            order=validated_data['order'],
-            product_size=product_size,
-            quantity=validated_data['quantity'],
-            is_bonus=validated_data.get('is_bonus', False),
-            color_name=product_size.color.name,
-            size_name=product_size.size.name,
-            color_id=product_size.color.id,
-            size_id=product_size.size.id,
-            total_amount=validated_data.get('total_amount', 0)
-        )
-        return order_item
+        return super().create(validated_data)
 
     def get_product(self, obj):
         product_size = obj.product_size

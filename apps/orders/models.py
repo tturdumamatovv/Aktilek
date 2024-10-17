@@ -111,19 +111,6 @@ class OrderItem(models.Model):
             return f"{self.product_size.product.name} - {self.size_name if self.size_name else 'Размер не указан'} - {self.quantity} шт."
         return f"Товар - {self.size_name if self.size_name else 'Размер не указан'} - {self.quantity} шт."
 
-    def save(self, *args, **kwargs):
-        if self.product_size:
-            # Сохраняем название размера
-            self.size_name = self.product_size.size.name if self.product_size.size else "Размер не указан"
-            self.size_id = self.product_size.size.id if self.product_size.size else None
-
-            # Сохраняем название и ID цвета
-            self.color_name = self.product_size.color.name if self.product_size.color else "Цвет не указан"
-            self.color_id = self.product_size.color.id if self.product_size.color else None
-
-        # Вызываем родительский метод save
-        super().save(*args, **kwargs)
-
     def calculate_total_amount(self):
         if not self.is_bonus:
             product = self.product_size.product  # Получаем связанный продукт
@@ -137,16 +124,29 @@ class OrderItem(models.Model):
             return total
 
     def save(self, *args, **kwargs):
-        if not self.id:
-            self.total_amount = 0
-            super().save(*args, **kwargs)
+        # Сохраняем названия размера и цвета, если есть product_size
+        if self.product_size:
+            self.size_name = self.product_size.size.name if self.product_size.size else "Размер не указан"
+            self.size_id = self.product_size.size.id if self.product_size.size else None
+
+            self.color_name = self.product_size.color.name if self.product_size.color else "Цвет не указан"
+            self.color_id = self.product_size.color.id if self.product_size.color else None
+
+        # Рассчитываем общую сумму
         self.total_amount = self.calculate_total_amount()
+
+        # Сохраняем элемент заказа
         super().save(*args, **kwargs)
+
+        # Обновляем общую сумму заказа
         self.order.total_amount = self.order.get_total_amount()
+
+        # Если товар оплачивается бонусами, обновляем общую сумму бонусов заказа
         if self.is_bonus:
             self.order.total_bonus_amount = self.order.get_total_bonus_amount()
-        self.order.save()
 
+        # Сохраняем изменения в заказе
+        self.order.save()
 
 class PercentCashback(SingletonModel):
     mobile_percent = models.IntegerField(verbose_name=_("Процент за мобильное приложение"))
