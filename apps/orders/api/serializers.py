@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 import pytz
 from django.db import transaction
 from django.conf import settings
@@ -182,24 +184,21 @@ class OrderSerializer(serializers.ModelSerializer):
         user_address_id = validated_data.pop('user_address_id', None)  # Адрес для авторизованного
 
         with transaction.atomic():
+            # Создаем заказ без финальной суммы
             order = Order.objects.create(**validated_data)
 
             if user_address_id:
                 order.user_address_id = user_address_id
                 order.save()
 
-            if promo_code_data:
-                promo_code_instance = PromoCode.objects.filter(code=promo_code_data).first()
-                if not promo_code_instance or not promo_code_instance.is_valid():
-                    raise serializers.ValidationError({"promo_code": "Промокод недействителен или его срок истек."})
-                order.promo_code = promo_code_instance
-                order.save()
+            total_amount = Decimal(0)
 
             # Добавляем продукты в заказ
             for product_data in products_data:
                 product_size = ProductSize.objects.filter(id=product_data['product_size_id']).first()
                 if not product_size:
-                    raise serializers.ValidationError(f"ProductSize with id {product_data['product_size_id']} does not exist.")
+                    raise serializers.ValidationError(
+                        f"ProductSize with id {product_data['product_size_id']} does not exist.")
 
                 order_item = OrderItem(
                     order=order,
@@ -209,7 +208,29 @@ class OrderSerializer(serializers.ModelSerializer):
                 )
                 order_item.save()  # Сохраняем элемент заказа
 
-                # Обновляем статус продукта
+                # Добавляем к общей сумме заказа стоимость текущего продукта
+                total_amount += order_item.total_amount
+                print(
+                    f"Added item to order: {order_item.product_size.product.name} - {order_item.size_name} - {order_item.quantity} шт.. Total so far: {total_amount}")
+
+            order.total_amount = total_amount
+            print(f"Order total amount before promo: {order.total_amount}")
+
+            # Применяем промо-код, если он есть
+            if promo_code_data:
+                promo_code_instance = PromoCode.objects.filter(code=promo_code_data).first()
+                if not promo_code_instance or not promo_code_instance.is_valid():
+                    raise serializers.ValidationError({"promo_code": "Промокод недействителен или его срок истек."})
+                order.promo_code = promo_code_instance
+                order.total_amount = order.apply_promo_code()  # Применяем скидку к общей сумме
+                print(f"Order total amount after promo: {order.total_amount}")
+
+            # Сохраняем изменения в заказе
+            order.save()
+
+            # Обновляем статус продукта
+            for product_data in products_data:
+                product_size = ProductSize.objects.filter(id=product_data['product_size_id']).first()
                 product_size.product.is_ordered = True
                 product_size.product.save()
 

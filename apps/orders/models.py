@@ -63,14 +63,35 @@ class Order(models.Model):
 
     def apply_promo_code(self):
         discount_amount = Decimal(0)  # Инициализируем переменную
+        print(f"Applying promo code, current total amount: {self.total_amount}")
+
+        # Убедимся, что сумма заказа не None
+        if self.total_amount is None:
+            self.total_amount = Decimal(0)
+
         if self.promo_code and self.promo_code.is_valid():
-            if self.promo_code.type == 'p':
+            print(f"Promo code: {self.promo_code.code}")
+
+            # Применение процентного промо-кода
+            if self.promo_code.type == '%':
                 discount_rate = Decimal(self.promo_code.discount) / Decimal(100)
                 discount_amount = discount_rate * self.total_amount
-            elif self.promo_code.type == 'f':
+                print(f"Discount rate: {discount_rate}, Discount amount: {discount_amount}")
+
+            # Применение фиксированного промо-кода (сом)
+            elif self.promo_code.type == 'сом':
                 discount_amount = Decimal(self.promo_code.discount)
+                print(f"Fixed discount amount: {discount_amount}")
+
+            # Убедимся, что сумма скидки не превышает общую сумму заказа
             discount_amount = min(discount_amount, self.total_amount)
-        return self.total_amount - discount_amount
+            print(f"Final discount amount applied: {discount_amount}")
+
+        # Вычитаем скидку из общей суммы
+        new_total_amount = self.total_amount - discount_amount
+        print(f"Total amount after applying promo code: {new_total_amount}")
+
+        return new_total_amount
 
     def get_total_amount(self):
         total_amount = Decimal(0)
@@ -85,7 +106,12 @@ class Order(models.Model):
         return total_bonus_amount
 
     def save(self, *args, **kwargs):
-        self.total_amount = self.apply_promo_code()
+        # Применяем промо-код только если общая сумма не была ранее уменьшена
+        if not self.total_amount or self.total_amount == self.get_total_amount():
+            print(f"Applying promo code, current total amount: {self.total_amount}")
+            self.total_amount = self.apply_promo_code()
+            print(f"Total amount after applying promo code: {self.total_amount}")
+
         super().save(*args, **kwargs)
 
 
