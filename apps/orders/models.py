@@ -62,11 +62,11 @@ class Order(models.Model):
         return f"Заказ #{self.id}"
 
     def apply_promo_code(self):
-        if self.total_amount is None:
-            # Если общая сумма заказа не установлена, возвращаем 0 или бросаем исключение
-            raise ValueError("Общая сумма заказа не установлена.")
+        # Рассчитываем общую сумму, если она еще не установлена
+        if not self.total_amount:
+            self.total_amount = self.get_total_amount()
 
-        discount_amount = Decimal(0)  # Инициализируем переменную
+        discount_amount = Decimal(0)  # Инициализируем скидку
 
         if self.promo_code and self.promo_code.is_valid():
             if self.promo_code.type == 'p':
