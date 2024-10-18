@@ -108,6 +108,7 @@ class OrderListSerializer(serializers.ModelSerializer):
     user_address = serializers.SerializerMethodField()
     app_download_url = serializers.SerializerMethodField()
     order_status = serializers.SerializerMethodField()  # Добавлено для статуса
+    total_bonus_amount = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
@@ -149,6 +150,10 @@ class OrderListSerializer(serializers.ModelSerializer):
             'cancelled': 'Отменено'
         }
         return status_map.get(obj.order_status, obj.order_status)  # Поле app_download_link было связано с моделью TelegramBotToken, которая была удалена
+
+    def get_total_bonus_amount(self, obj):
+        # Добавляем логику для возврата количества бонусов
+        return obj.total_bonus_amount if obj.total_bonus_amount else 0
 
 
 class OrderSerializer(serializers.ModelSerializer):
