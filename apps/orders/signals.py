@@ -30,6 +30,12 @@ def get_readable_order_status(status):
         return 'Неизвестный статус'
 
 
+@receiver(post_save, sender=Order)
+def handle_order_status_change(sender, instance, **kwargs):
+    if instance.order_status == 'completed':
+        instance.apply_bonuses()
+
+
 @receiver(pre_save, sender=Order)
 def check_status_change(sender, instance, **kwargs):
     if instance.pk:

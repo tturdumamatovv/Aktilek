@@ -79,13 +79,6 @@ class CreateOrderView(generics.CreateAPIView):
 
             order_serializer = OrderSerializer(order, context={'request': request})
 
-            # Начисляем бонусы, если заказ не был оплачен бонусами
-            if not any(item.is_bonus for item in order.order_items.all()):
-                bonus_points = calculate_bonus_points(order.total_amount, 0, request.data.get('order_source', 'unknown'))
-                order.total_bonus_amount = bonus_points  # Сохраняем бонусы
-                apply_bonus_points(request.user, bonus_points)
-                order.save()  # Сохраняем заказ с начисленными бонусами
-
             # Уменьшаем количество продуктов на складе
             for item in order.order_items.all():
                 product_size = item.product_size

@@ -105,6 +105,15 @@ class Order(models.Model):
             total_bonus_amount += order_item.total_amount
         return total_bonus_amount
 
+    def apply_bonuses(self):
+        from apps.services.bonuces import calculate_bonus_points, apply_bonus_points
+        # Логика для начисления бонусов, если заказ завершен
+        if not self.total_bonus_amount and not any(item.is_bonus for item in self.order_items.all()):
+            bonus_points = calculate_bonus_points(self.total_amount, 0, self.order_source)
+            self.total_bonus_amount = bonus_points  # Сохраняем бонусы в заказе
+            apply_bonus_points(self.user, bonus_points)
+            self.save()
+
     def save(self, *args, **kwargs):
         # Применяем промо-код только если общая сумма не была ранее уменьшена
         if not self.total_amount or self.total_amount == self.get_total_amount():
