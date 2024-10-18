@@ -131,14 +131,14 @@ class PopularProducts(generics.ListAPIView):
     serializer_class = ProductSerializer
 
     def get_queryset(self):
-        return Product.objects.filter(is_popular=True)
+        return Product.objects.filter(is_popular=True).order_by('?')
 
 
 class NewProducts(generics.ListAPIView):
     serializer_class = ProductSerializer
 
     def get_queryset(self):
-        return Product.objects.filter(is_new=True)
+        return Product.objects.filter(is_new=True).order_by('?')
 
 
 class CheckProductSizes(generics.GenericAPIView):
