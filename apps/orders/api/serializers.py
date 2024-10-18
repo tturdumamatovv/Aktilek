@@ -61,7 +61,7 @@ class ProductOrderItemSerializer(serializers.ModelSerializer):
         if request and image_url:
             image_url = request.build_absolute_uri(image_url)
 
-        product_exists = obj.product_size.product.__class__.objects.filter(pk=obj.product_size.product.pk).exists()
+        product_in_stock = product_size.quantity > 0
 
         return {
             'id': product.id,
@@ -69,7 +69,7 @@ class ProductOrderItemSerializer(serializers.ModelSerializer):
             'price': product.discounted_price if product.discounted_price else product.price,
             'image': image_url,
             'product_size_id': product_size.id,
-            'in_stock': product_exists
+            'in_stock': product_in_stock
         }
 
     def get_color(self, obj):
