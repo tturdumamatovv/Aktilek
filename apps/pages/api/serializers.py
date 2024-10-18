@@ -12,7 +12,14 @@ from apps.pages.models import (
     Address,
     PaymentMethod,
     Contacts,
-    StaticPage, Stories, Story, StoriesUserCheck, SiteSettings, BonusPage, News
+    StaticPage,
+    Stories,
+    Story,
+    StoriesUserCheck,
+    SiteSettings,
+    BonusPage,
+    News,
+    MethodsOfPayment, Redirection,
 )
 
 
@@ -20,6 +27,12 @@ class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ['slug', 'name', 'description', 'image']
+
+
+class MethodOfPaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MethodsOfPayment
+        fields = ['title', 'description', 'online_payment']
 
 
 class BannerSerializer(serializers.ModelSerializer):
@@ -58,15 +71,21 @@ class OrderTypesSerializer(serializers.ModelSerializer):
         fields = ['title', 'description', 'image']
 
 
+class RedirectionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Redirection
+        fields = ['title', 'description', 'link', 'link_2', 'image']
+
+
 class MainPageSerializer(serializers.ModelSerializer):
     order_types = OrderTypesSerializer(many=True, read_only=True)
     delivery_conditions = OrderTypesSerializer(many=True, read_only=True)
-    methods_of_payment = OrderTypesSerializer(many=True, read_only=True)
+    redirection = RedirectionSerializer(many=True, read_only=True)
 
     class Meta:
         model = MainPage
         fields = ['icon', 'phone', 'meta_title', 'meta_description', 'meta_image', 'order_types',
-                  'delivery_conditions', 'methods_of_payment']
+                  'delivery_conditions', 'redirection']
 
 
 class HomePageSerializer(serializers.Serializer):

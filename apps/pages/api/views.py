@@ -10,7 +10,7 @@ from apps.pages.models import (
     Banner,
     MainPage,
     Contacts,
-    StaticPage, Stories, StoriesUserCheck, BonusPage, News
+    StaticPage, Stories, StoriesUserCheck, BonusPage, News, MethodsOfPayment
 )
 from apps.pages.api.serializers import (
     HomePageSerializer,
@@ -22,7 +22,7 @@ from apps.pages.api.serializers import (
     StoriesSerializer,
     StoriesCheckSerializer,
     BonuspageSerializer,
-    NewsSerializer
+    NewsSerializer, MethodOfPaymentSerializer
 )
 
 
@@ -101,6 +101,11 @@ class StaticPageDetailView(generics.RetrieveAPIView):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
+
+
+class MethodsOfPaymentView(generics.ListAPIView):
+    queryset = MethodsOfPayment.objects.all()
+    serializer_class = MethodOfPaymentSerializer
 
 
 class LayOutView(generics.ListAPIView):

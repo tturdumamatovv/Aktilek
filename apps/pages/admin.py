@@ -20,7 +20,8 @@ from apps.pages.models import (
     SiteSettings,
     BonusPage,
     Advertisement,
-    News
+    News,
+    Redirection
 )
 from apps.services.firebase_notification import send_firebase_notification
 
@@ -111,15 +112,20 @@ class DeliveryConditionsInline(TabularInline):
     extra = 0
 
 
-class MethodsOfPaymentInline(TabularInline):
-    model = MethodsOfPayment
+@admin.register(MethodsOfPayment)
+class MethodsOfPaymentAdmin(ModelAdmin):
+    list_display = ('title', 'description', 'online_payment')
+
+
+class RedirectionInline(TabularInline):
+    model = Redirection
     extra = 0
 
 
 @admin.register(MainPage)
 class MainPageAdmin(ModelAdmin):
     list_display = ('phone', 'icon', 'meta_title', 'meta_description', 'meta_image')
-    inlines = [MethodsOfPaymentInline]
+    inlines = [RedirectionInline]
 
 
 class StoryInline(TabularInline):

@@ -88,10 +88,22 @@ class DeliveryConditions(models.Model):
 
 
 class MethodsOfPayment(models.Model):
-    page = models.ForeignKey(MainPage, related_name='methods_of_payment', on_delete=models.CASCADE)
     title = models.CharField(max_length=255, verbose_name=_("Заголовок"))
     description = RichTextField(verbose_name=_("Описание"))
     online_payment = models.BooleanField(default=True, verbose_name=_("Оплата онлайн"))
+
+    class Meta:
+        verbose_name = _("Способ оплаты")
+        verbose_name_plural = _("Способы оплаты")
+
+
+class Redirection(models.Model):
+    page = models.ForeignKey(MainPage, related_name='redirection', on_delete=models.CASCADE)
+    title = models.CharField(max_length=255, verbose_name=_("Заголовок"))
+    description = RichTextField(verbose_name=_("Описание"))
+    link = models.URLField(verbose_name=_("Ссылка"))
+    link_2 = models.URLField(verbose_name=_("Дополнительная ссылка"))
+    image = models.FileField(upload_to='pages/redirection/', verbose_name=_("Изображение"))
 
     class Meta:
         verbose_name = _("Способ оплаты")

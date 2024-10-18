@@ -5,7 +5,8 @@ from .views import (
     ContactsView,
     StaticPageDetailView,
     LayOutView,
-    BannersView, StoriesView, StoriesViewedView, BonusPageView, NewsListView, NewsDetailView
+    BannersView,
+    StoriesView, StoriesViewedView, BonusPageView, NewsListView, NewsDetailView, MethodsOfPaymentView
 )
 
 urlpatterns = [
@@ -24,5 +25,6 @@ urlpatterns = [
     path('bonus/page/', BonusPageView.as_view(), name='bonus-page'),
     path('news/', NewsListView.as_view(), name='news-list'),
     path('news/<int:pk>/', NewsDetailView.as_view(), name='news-detail'),
+    path('checkout/', MethodsOfPaymentView.as_view(), name='checkout'),
 
 ]

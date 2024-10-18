@@ -182,6 +182,11 @@ UNFOLD = {
                         "icon": "contact_phone",
                         "link": reverse_lazy("admin:pages_contacts_changelist"),
                     },
+                    {
+                        "title": _("Способ оплаты"),
+                        "icon": "paid",
+                        "link": reverse_lazy("admin:pages_methodsofpayment_changelist"),
+                    },
                 ],
             },
             {
