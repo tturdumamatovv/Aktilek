@@ -3,7 +3,7 @@ from io import BytesIO
 
 from mptt.models import MPTTModel, TreeForeignKey
 
-from PIL import Image, UnidentifiedImageError
+from PIL import Image
 from colorfield.fields import ColorField
 from django.core.files.base import ContentFile
 from django.db import models
@@ -109,20 +109,16 @@ class Product(models.Model):
         return f"/admin/product/product/{self.id}/change/"
 
     def process_and_save_image(self):
-        """Обрабатывает и сохраняет изображение, преобразуя его в формат .webp и изменяя размер."""
-        if not self.image:
+        """ Обрабатывает и сохраняет изображение, преобразуя его в формат .webp и изменяя размер, и удаляет старое изображение если нужно """
+        if not self.photo:
             return
 
         # Путь к текущему файлу перед изменением
-        old_path = self.image.path if self.image.name else None
+        old_path = self.photo.path if self.photo.name else None
 
-        # Проверяем расширение файла перед обработкой
-        supported_formats = ('.jpg', '.jpeg', '.png', '.webp')
-        if not self.image.name.lower().endswith(supported_formats):
-            raise ValidationError(f"Формат {self.image.name} не поддерживается. Используйте JPG, PNG или WEBP.")
-
-        try:
-            image = Image.open(self.image)
+        # Проверяем, нужно ли преобразование
+        if not self.photo.name.endswith('.webp'):
+            image = Image.open(self.photo)
 
             max_width = 800
             max_height = 800
@@ -134,19 +130,19 @@ class Product(models.Model):
 
             resized_image = image.resize((new_width, new_height), Image.LANCZOS)
 
-            # Сохранение изображения в памяти
             image_io = BytesIO()
             resized_image.save(image_io, format='WEBP', quality=85)
 
-            new_name = f"{self.image.name.rsplit('.', 1)[0]}.webp"
-            self.image.save(new_name, ContentFile(image_io.getvalue()), save=False)
+            new_name = f"{self.photo.name.rsplit('.', 1)[0]}.webp"
+            self.photo.save(new_name, ContentFile(image_io.getvalue()), save=False)
 
-            # Удаление старого файла, если путь существует и файл был обновлён
-            if old_path and old_path != self.image.path and os.path.isfile(old_path):
+        # Вызов родительского метода save
+        super().save()
+
+        # Удаление старого файла, если путь существует и файл был обновлён
+        if old_path and old_path != self.photo.path:
+            if os.path.isfile(old_path):
                 os.remove(old_path)
-
-        except UnidentifiedImageError:
-            raise ValidationError("Невозможно обработать файл изображения. Формат не распознан.")
 
     def save(self, *args, **kwargs):
         # Генерация slug только если он не задан
@@ -300,12 +296,8 @@ class ProductImage(models.Model):
         # Путь к текущему файлу перед изменением
         old_path = self.image.path if self.image.name else None
 
-        # Проверяем расширение файла перед обработкой
-        supported_formats = ('.jpg', '.jpeg', '.png', '.webp')
-        if not self.image.name.lower().endswith(supported_formats):
-            raise ValidationError(f"Формат {self.image.name} не поддерживается. Используйте JPG, PNG или WEBP.")
-
-        try:
+        # Проверяем, нужно ли преобразование
+        if not self.image.name.endswith('.webp'):
             image = Image.open(self.image)
 
             max_width = 800
@@ -325,12 +317,13 @@ class ProductImage(models.Model):
             new_name = f"{self.image.name.rsplit('.', 1)[0]}.webp"
             self.image.save(new_name, ContentFile(image_io.getvalue()), save=False)
 
-            # Удаление старого файла, если путь существует и файл был обновлён
-            if old_path and old_path != self.image.path and os.path.isfile(old_path):
-                os.remove(old_path)
+        # Вызов родительского метода save
+        super().save()
 
-        except UnidentifiedImageError:
-            raise ValidationError("Невозможно обработать файл изображения. Формат не распознан.")
+        # Удаление старого файла, если путь существует и файл был обновлён
+        if old_path and old_path != self.image.path:
+            if os.path.isfile(old_path):
+                os.remove(old_path)
 
     def save(self, *args, **kwargs):
         self.process_and_save_image()
