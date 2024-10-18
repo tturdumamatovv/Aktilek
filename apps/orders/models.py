@@ -7,7 +7,6 @@ from django.utils.translation import gettext_lazy as _
 
 from apps.pages.models import SingletonModel
 from apps.product.models import ProductSize, Topping, Size
-from apps.services.bonuces import calculate_bonus_points, apply_bonus_points
 
 
 class Order(models.Model):
@@ -109,14 +108,9 @@ class Order(models.Model):
     def save(self, *args, **kwargs):
         # Применяем промо-код только если общая сумма не была ранее уменьшена
         if not self.total_amount or self.total_amount == self.get_total_amount():
+            print(f"Applying promo code, current total amount: {self.total_amount}")
             self.total_amount = self.apply_promo_code()
-
-        # Начисляем бонусы пользователю, если статус заказа изменился на "Завершено"
-        if self.order_status == 'completed' and not self.total_bonus_amount:
-            bonus_points = calculate_bonus_points(self.total_amount, 0, self.order_source)
-            self.total_bonus_amount = bonus_points
-            apply_bonus_points(self.user, bonus_points)
-            self.user.save()
+            print(f"Total amount after applying promo code: {self.total_amount}")
 
         super().save(*args, **kwargs)
 
