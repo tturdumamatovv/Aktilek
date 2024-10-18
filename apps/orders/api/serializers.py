@@ -65,7 +65,8 @@ class ProductOrderItemSerializer(serializers.ModelSerializer):
             'id': product.id,
             'name': product.name,
             'price': product.discounted_price if product.discounted_price else product.price,
-            'image': image_url
+            'image': image_url,
+            'product_size_id': product_size.id
         }
 
     def get_color(self, obj):
