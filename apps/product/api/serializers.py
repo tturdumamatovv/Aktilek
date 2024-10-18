@@ -132,6 +132,7 @@ class ProductSerializer(serializers.ModelSerializer):
     photo = serializers.SerializerMethodField()
     is_ordered = serializers.BooleanField(read_only=True)
     is_active = serializers.BooleanField()
+    country = CountrySerializer(read_only=True)
 
     class Meta:
         model = Product
