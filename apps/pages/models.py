@@ -28,10 +28,10 @@ class SingletonModel(models.Model):
 
 
 class MainPage(SingletonModel):
-    icon = models.ImageField(
+    icon = models.FileField(
         upload_to="images/icons",
-        verbose_name=_("Иконка"),
-        help_text=_("Иконка для главной страницы.")
+        verbose_name=_("Логотип"),
+        help_text=_("Логотип для главной страницы.")
     )
     phone = models.CharField(
         max_length=20,
@@ -114,7 +114,7 @@ class StaticPage(models.Model):
     title = models.CharField(max_length=255, verbose_name=_("Заголовок"))
     description = RichTextField(verbose_name=_("Описание"))
     slug = models.SlugField(unique=True, verbose_name=_("Слаг"), blank=True, null=True)
-    image = models.FileField(verbose_name=_("Изображение"), upload_to="images/static", blank=True, null=True)
+    image = models.FileField(verbose_name=_("Изображение"), upload_to="images/static", blank=True, null=True, max_length=5000)
     meta_title = models.CharField(max_length=255, verbose_name=_("Мета заголовок"), blank=True, null=True)
     meta_description = models.CharField(max_length=255, verbose_name=_("Мета описание"), blank=True, null=True)
     meta_image = models.FileField(verbose_name=_("Мета изображение"), upload_to="images/meta", blank=True, null=True)
