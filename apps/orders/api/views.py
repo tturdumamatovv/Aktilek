@@ -53,12 +53,10 @@ class CreateOrderView(generics.CreateAPIView):
 
     def create(self, request, *args, **kwargs):
         if not request.user.is_anonymous:
-            phone_number = request.user.phone_number
-            full_name = request.user.full_name
-            email = request.user.email
-
+            # Сохраняем основные данные
             is_pickup = request.data.get('is_pickup', False)
             user_address = None
+
             if not is_pickup:
                 user_address_id = request.data.get('user_address_id')
                 if not user_address_id:
@@ -74,18 +72,21 @@ class CreateOrderView(generics.CreateAPIView):
             serializer.is_valid(raise_exception=True)
             order = serializer.save(user=request.user)
 
+            # Привязываем адрес к заказу
             if not is_pickup and user_address:
                 order.user_address = user_address
                 order.save()
 
             order_serializer = OrderSerializer(order, context={'request': request})
 
-            # Начисление бонусов, если не оплачено бонусами
+            # Начисляем бонусы, если заказ не был оплачен бонусами
             if not any(item.is_bonus for item in order.order_items.all()):
                 bonus_points = calculate_bonus_points(order.total_amount, 0, request.data.get('order_source', 'unknown'))
+                order.total_bonus_amount = bonus_points  # Сохраняем бонусы
                 apply_bonus_points(request.user, bonus_points)
+                order.save()  # Сохраняем заказ с начисленными бонусами
 
-            # Уменьшение количества для каждого ProductSize в заказе
+            # Уменьшаем количество продуктов на складе
             for item in order.order_items.all():
                 product_size = item.product_size
                 if product_size.quantity >= item.quantity:
@@ -94,48 +95,26 @@ class CreateOrderView(generics.CreateAPIView):
                 else:
                     return Response({"error": "Недостаточно товара на складе."}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Уменьшение бонусов, если есть товары с is_bonus=True
+            # Обрабатываем оплату бонусами
             total_bonus_amount = sum(item.total_amount for item in order.order_items.all() if item.is_bonus)
             if total_bonus_amount > 0:
                 if request.user.bonus is None or request.user.bonus < total_bonus_amount:
                     return Response({"error": "Недостаточно бонусов для оплаты."}, status=status.HTTP_400_BAD_REQUEST)
 
                 request.user.bonus -= total_bonus_amount
-                request.user.save()  # Сохраняем изменения
+                request.user.save()
 
+            # Отправляем подтверждение по email, если указано
+            email = request.user.email
             if email:
                 self.send_order_confirmation_email(email, order_serializer.data)
-
-            payment_method = request.data.get('payment_method', 'card')
-            if payment_method == 'card':
-                response = self.create_freedompay_payment(order, email, phone_number)
-                if response.status_code == 200:
-                    try:
-                        root = ET.fromstring(response.text)
-                        payment_url = root.find('pg_redirect_url').text
-                    except ET.ParseError:
-                        return Response({"error": "Не удалось распарсить ответ платежного шлюза."},
-                                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-                    return Response({
-                        "message": "Заказ успешно создан.",
-                        "order": order_serializer.data,
-                        "payment_url": payment_url
-                    }, status=status.HTTP_201_CREATED)
-                else:
-                    return Response({"error": "Не удалось инициировать платеж."},
-                                    status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-            if not is_pickup:
-                order_serializer.data['Доставка'] = "Уточните сумму доставки у оператора"
 
             return Response({
                 "message": "Заказ успешно создан.",
                 "order": order_serializer.data
             }, status=status.HTTP_201_CREATED)
 
-        return Response({"error": "Требуется аутентификация для создания заказа."},
-                        status=status.HTTP_401_UNAUTHORIZED)
+        return Response({"error": "Требуется аутентификация для создания заказа."}, status=status.HTTP_401_UNAUTHORIZED)
 
     def create_freedompay_payment(self, order, email, phone_number):
         url = f"{PAYBOX_URL}/init_payment.php"
