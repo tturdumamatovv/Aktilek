@@ -81,10 +81,13 @@ class Product(models.Model):
     category = models.ForeignKey(Category, on_delete=models.CASCADE, verbose_name=_('Категория'),
                                  related_name='products', blank=True, null=True)
     name = models.CharField(max_length=100, verbose_name=_('Название'))
+    meta_name = models.CharField(max_length=100, verbose_name=_('Мета Название'), null=True, blank=True)
     slug = models.SlugField(max_length=100, unique=True, verbose_name=_('Ссылка'), blank=True,
                             null=True)  # Добавляем поле slug
     description = models.TextField(verbose_name=_('Описание'), blank=True, null=True)
+    meta_description = models.TextField(verbose_name=_('Мета Описание'), blank=True, null=True)
     photo = models.FileField(upload_to='product_photos/', verbose_name=_('Фото'))
+    meta_photo = models.FileField(upload_to='product_photos/', verbose_name=_('Мета Фото'), null=True, blank=True)
     country = models.ForeignKey('Country', related_name='products', verbose_name=_('Страна'), blank=True, null=True, on_delete=models.CASCADE)
     bonuses = models.BooleanField(default=False, verbose_name=_('Можно оптатить бонусами'))
     tags = models.ManyToManyField('Tag', related_name='products', verbose_name=_('Теги'), blank=True)
