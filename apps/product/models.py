@@ -277,7 +277,7 @@ class FavoriteProduct(models.Model):
 
 
 class ProductImage(models.Model):
-    image = models.ImageField(upload_to='product_images/', verbose_name=_("Изображение"))
+    image = models.FileField(upload_to='product_images/', verbose_name=_("Изображение"))
     product = models.ForeignKey(Product, related_name='images', on_delete=models.CASCADE, null=True, blank=True)
     color = models.ForeignKey(Color, related_name='images', on_delete=models.PROTECT, verbose_name=_('Цвет'))
 
