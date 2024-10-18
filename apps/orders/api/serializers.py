@@ -126,11 +126,14 @@ class OrderListSerializer(serializers.ModelSerializer):
         if obj.is_pickup:
             return "Самовывоз"
 
+        # Проверяем, есть ли у заказа адрес
+        if obj.user_address:
+            return f"{obj.user_address.city}, {obj.user_address.apartment_number}"
+
+        # Если у заказа нет адреса, возвращаем телефон пользователя, если он существует
         if obj.user:
             return obj.user.phone_number
 
-        if obj.user_address:
-            return f"{obj.user_address.city}, {obj.user_address.apartment_number}"
 
         return "Адрес не указан"
 
