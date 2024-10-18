@@ -79,12 +79,11 @@ class CreateOrderView(generics.CreateAPIView):
 
             order_serializer = OrderSerializer(order, context={'request': request})
 
-            # Начисляем бонусы, если заказ не был оплачен бонусами
+            # Сохраняем бонусы, которые могут быть начислены при завершении заказа (но не начисляем их)
             if not any(item.is_bonus for item in order.order_items.all()):
                 bonus_points = calculate_bonus_points(order.total_amount, 0, request.data.get('order_source', 'unknown'))
-                order.total_bonus_amount = bonus_points  # Сохраняем бонусы
-                apply_bonus_points(request.user, bonus_points)
-                order.save()  # Сохраняем заказ с начисленными бонусами
+                order.total_bonus_amount = bonus_points  # Сохраняем ожидаемые бонусы, но не начисляем их
+                order.save()
 
             # Уменьшаем количество продуктов на складе
             for item in order.order_items.all():
@@ -115,6 +114,7 @@ class CreateOrderView(generics.CreateAPIView):
             }, status=status.HTTP_201_CREATED)
 
         return Response({"error": "Требуется аутентификация для создания заказа."}, status=status.HTTP_401_UNAUTHORIZED)
+
 
     def create_freedompay_payment(self, order, email, phone_number):
         url = f"{PAYBOX_URL}/init_payment.php"
