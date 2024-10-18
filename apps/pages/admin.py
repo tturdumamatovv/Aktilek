@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from unfold.admin import ModelAdmin, TabularInline
+from unfold.admin import ModelAdmin, TabularInline, StackedInline
 
 from apps.pages.models import (
     Banner,
@@ -117,9 +117,10 @@ class MethodsOfPaymentAdmin(ModelAdmin):
     list_display = ('title', 'description', 'online_payment')
 
 
-class RedirectionInline(TabularInline):
+class RedirectionInline(StackedInline):
     model = Redirection
     extra = 0
+    exclude = ('title', 'description')
 
 
 @admin.register(MainPage)

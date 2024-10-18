@@ -56,6 +56,8 @@ class MainPage(SingletonModel):
         blank=True,
         null=True
     )
+    meta_keywords = models.TextField(verbose_name=_('Ключевые слова (keywords)'), help_text=_('Ключевые слова для SEO'),
+                                     blank=True, null=True)
 
     class Meta:
         verbose_name = _("Главная страница")
@@ -108,6 +110,9 @@ class Redirection(models.Model):
     class Meta:
         verbose_name = _("Способ оплаты")
         verbose_name_plural = _("Способы оплаты")
+
+    def __str__(self):
+        return self.title
 
 
 class StaticPage(models.Model):
