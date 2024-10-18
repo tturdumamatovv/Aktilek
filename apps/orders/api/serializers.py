@@ -13,6 +13,8 @@ from apps.orders.models import (
 from apps.product.models import ProductSize, Product, Size, Topping, Color, ProductImage
 from django.utils.translation import gettext_lazy as _
 
+from apps.services.bonuces import calculate_bonus_points
+
 
 class ToppingSerializer(serializers.ModelSerializer):
     price = serializers.IntegerField(read_only=True)
@@ -152,8 +154,13 @@ class OrderListSerializer(serializers.ModelSerializer):
         return status_map.get(obj.order_status, obj.order_status)  # Поле app_download_link было связано с моделью TelegramBotToken, которая была удалена
 
     def get_total_bonus_amount(self, obj):
-        # Добавляем логику для возврата количества бонусов
-        return obj.total_bonus_amount if obj.total_bonus_amount else 0
+        # Если бонусы уже начислены, вернуть их
+        if obj.total_bonus_amount:
+            return obj.total_bonus_amount
+
+        # Если бонусы еще не начислены, вычисляем потенциальное количество бонусов
+        bonus_points = calculate_bonus_points(obj.total_amount, 0, obj.order_source)
+        return bonus_points
 
 
 class OrderSerializer(serializers.ModelSerializer):
