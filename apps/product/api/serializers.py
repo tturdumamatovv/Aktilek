@@ -192,11 +192,12 @@ class ProductSimpleSerializer(serializers.ModelSerializer):
     photo = serializers.SerializerMethodField()
     is_ordered = serializers.BooleanField(read_only=True)
     is_active = serializers.BooleanField()
+    country = CountrySerializer(read_only=True)
 
     class Meta:
         model = Product
         fields = ['id', 'name', 'slug', 'description', 'photo', 'tags',
-                  'price', 'discounted_price', 'bonus_price',
+                  'price', 'discounted_price', 'country', 'bonus_price',
                   'category_slug', 'category_name', 'is_favorite',
                   'average_rating', 'review_count', 'is_ordered', 'is_active']
 
@@ -258,7 +259,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     images = ProductImageSerializer(many=True, read_only=True)
 
     # Теперь мы можем использовать поле `similar_products` напрямую
-    similar_products = ProductSimpleSerializer(many=True, read_only=True)
+    similar_products = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -292,6 +293,11 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
     def get_review_count(self, obj):
         return obj.product_reviews.exclude(comment='').count()
+
+    def get_similar_products(self, obj):
+        # Получаем не более 10 случайных похожих товаров
+        similar_products = obj.similar_products.order_by('?')[:10]
+        return ProductSimpleSerializer(similar_products, many=True, context=self.context).data
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
