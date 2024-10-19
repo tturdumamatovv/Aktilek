@@ -323,9 +323,17 @@ class ProductImage(models.Model):
 
             # Сохранение изображения в памяти
             image_io = BytesIO()
-            resized_image.save(image_io, format='WEBP', quality=85)
 
-            new_name = f"{self.image.name.rsplit('.', 1)[0]}.webp"
+            # Определяем формат для сохранения
+            if self.image.name.endswith('.avif'):
+                # Сохраняем в формате .webp
+                resized_image.save(image_io, format='WEBP', quality=85)
+                new_name = f"{self.image.name.rsplit('.', 1)[0]}.webp"
+            else:
+                # Сохраняем в формате .webp
+                resized_image.save(image_io, format='WEBP', quality=85)
+                new_name = f"{self.image.name.rsplit('.', 1)[0]}.webp"
+
             self.image.save(new_name, ContentFile(image_io.getvalue()), save=False)
 
         # Вызов родительского метода save
@@ -339,7 +347,6 @@ class ProductImage(models.Model):
     def save(self, *args, **kwargs):
         self.process_and_save_image()
         super().save(*args, **kwargs)
-
 
 class Characteristic(models.Model):
     name = models.CharField(max_length=100, verbose_name=_('Название'))
