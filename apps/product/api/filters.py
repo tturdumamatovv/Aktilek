@@ -43,7 +43,7 @@ class ProductFilter(django_filters.FilterSet):
 
     def filter_by_color(self, queryset, name, value):
         color_values = [c.strip() for c in value.split(',')]
-        return queryset.filter(product_colors__color__name__in=color_values).distinct()
+        return queryset.filter(product_sizes__color__name__in=color_values).distinct()
 
     def filter_by_gender(self, queryset, name, value):
         gender_values = [g.strip() for g in value.split(',')]
