@@ -19,6 +19,8 @@ class ProductFilter(django_filters.FilterSet):
     # Фильтрация по размеру через запятую
     size = django_filters.CharFilter(method='filter_by_size')
 
+    color = django_filters.CharFilter(method='filter_by_color')
+
     # Фильтрация по минимальной цене
     price_min = django_filters.NumberFilter(method='filter_by_min_price')
 
@@ -30,7 +32,7 @@ class ProductFilter(django_filters.FilterSet):
 
     class Meta:
         model = Product
-        fields = ['id', 'name', 'country', 'category', 'gender', 'size', 'price_min', 'price_max', 'rating_min']
+        fields = ['id', 'name', 'country', 'category', 'gender', 'size', 'color', 'price_min', 'price_max', 'rating_min']
 
     def filter_final_category(self, queryset, name, value):
         return queryset.filter(category__name=value, category__subcategories__isnull=True)
@@ -38,6 +40,10 @@ class ProductFilter(django_filters.FilterSet):
     def filter_by_size(self, queryset, name, value):
         size_values = [s.strip() for s in value.split(',')]
         return queryset.filter(product_sizes__size__name__in=size_values).distinct()
+
+    def filter_by_color(self, queryset, name, value):
+        color_values = [c.strip() for c in value.split(',')]
+        return queryset.filter(product_colors__color__name__in=color_values).distinct()
 
     def filter_by_gender(self, queryset, name, value):
         gender_values = [g.strip() for g in value.split(',')]
