@@ -120,7 +120,7 @@ class Product(models.Model):
         old_path = self.photo.path if self.photo.name else None
 
         # Проверяем, нужно ли преобразование
-        if not self.photo.name.endswith('.webp'):
+        if not self.photo.name.endswith(('.webp', '.avif')):
             image = Image.open(self.photo)
 
             max_width = 800
@@ -134,9 +134,17 @@ class Product(models.Model):
             resized_image = image.resize((new_width, new_height), Image.LANCZOS)
 
             image_io = BytesIO()
-            resized_image.save(image_io, format='WEBP', quality=85)
 
-            new_name = f"{self.photo.name.rsplit('.', 1)[0]}.webp"
+            # Определяем формат для сохранения
+            if self.photo.name.endswith('.avif'):
+                # Сохраняем в формате .webp
+                resized_image.save(image_io, format='WEBP', quality=85)
+                new_name = f"{self.photo.name.rsplit('.', 1)[0]}.webp"
+            else:
+                # Сохраняем в формате .webp
+                resized_image.save(image_io, format='WEBP', quality=85)
+                new_name = f"{self.photo.name.rsplit('.', 1)[0]}.webp"
+
             self.photo.save(new_name, ContentFile(image_io.getvalue()), save=False)
 
         # Вызов родительского метода save
