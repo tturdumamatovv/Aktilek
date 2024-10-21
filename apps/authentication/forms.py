@@ -26,9 +26,6 @@ class CustomUserChangeForm(UserChangeForm):
     class Meta:
         model = User
         fields = ('phone_number', 'full_name', 'is_staff', 'is_superuser', 'user_permissions', 'groups')
-        widgets = {
-            'user_permissions': CustomPermissionSelectMultiple(attrs={'class': 'select-multiple'}),
-        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
