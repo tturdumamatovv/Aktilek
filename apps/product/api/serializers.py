@@ -381,7 +381,7 @@ class CategoryProductSerializer(serializers.ModelSerializer):
 
     def get_filters(self, obj):
         # Получаем все продукты в категории
-        products = Product.objects.filter(category=obj)
+        products = Product.objects.filter(category=obj, is_active=True)
 
         # Минимальная и максимальная цена
         price_min = products.aggregate(Min('discounted_price'))['discounted_price__min'] or \
