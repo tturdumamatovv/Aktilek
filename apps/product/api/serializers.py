@@ -267,7 +267,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
                   'price', 'discounted_price', 'bonus_price', 'product_sizes',
                   'category_slug', 'category_name', 'is_favorite',
                   'reviews', 'characteristics', 'average_rating',
-                  'review_count', 'gender', 'country', 'is_ordered', 'is_active', 'similar_products']
+                  'review_count', 'gender', 'country', 'is_ordered', 'is_active', 'similar_products', 'size_chart']
 
     def get_category_slug(self, obj):
         if obj.category:

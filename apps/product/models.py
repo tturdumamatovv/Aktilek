@@ -107,6 +107,7 @@ class Product(models.Model):
     similar_products = models.ManyToManyField('self', blank=True, symmetrical=False, verbose_name=_('Похожие продукты'))
     datetime = models.DateTimeField(auto_now_add=True, verbose_name=_("Дата добавления"))
     views_count = models.PositiveIntegerField(default=0, verbose_name=_('Количество просмотров'))
+    size_chart = models.FileField(upload_to='product_size_chart', verbose_name=_("Изображения 'Размерная сетка'"), null=True)
 
     class Meta:
         verbose_name = "Продукт"
