@@ -145,6 +145,16 @@ UNFOLD = {
                         "icon": "tag",
                         "link": reverse_lazy("admin:product_tag_changelist"),
                     },
+                    {
+                        "title": _("Страны"),
+                        "icon": "flag",
+                        "link": reverse_lazy("admin:product_country_changelist"),
+                    },
+                    {
+                        "title": _("Пол"),
+                        "icon": "wc",
+                        "link": reverse_lazy("admin:product_gender_changelist"),
+                    },
                 ],
             },
             {

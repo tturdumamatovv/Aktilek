@@ -69,3 +69,6 @@ class UserAdmin(ModelAdmin):
     ordering = ('phone_number',)
     filter_horizontal = ('groups', 'user_permissions',)
     inlines = [OrderInline, UserAddressInline]
+
+    def has_add_permission(self, request):
+        return False

@@ -1,7 +1,9 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from unfold.admin import ModelAdmin, TabularInline, StackedInline
+from modeltranslation.admin import TabbedTranslationAdmin
 
+from apps.pages.forms import StaticPageAdminForm
 from apps.pages.models import (
     Banner,
     Phone,
@@ -23,6 +25,7 @@ from apps.pages.models import (
     News,
     Redirection
 )
+from apps.product.forms import MethodsOfPaymentAdminForm
 from apps.services.firebase_notification import send_firebase_notification
 
 
@@ -64,11 +67,8 @@ class BannerAdmin(ModelAdmin):
 
 
 @admin.register(StaticPage)
-class StaticPageAdmin(ModelAdmin):
-    exclude = [
-        'title',
-        'description',
-    ]
+class StaticPageAdmin(ModelAdmin, TabbedTranslationAdmin):
+    form = StaticPageAdminForm
 
 
 class PhoneInline(TabularInline):
@@ -113,7 +113,8 @@ class DeliveryConditionsInline(TabularInline):
 
 
 @admin.register(MethodsOfPayment)
-class MethodsOfPaymentAdmin(ModelAdmin):
+class MethodsOfPaymentAdmin(ModelAdmin, TabbedTranslationAdmin):
+    form = MethodsOfPaymentAdminForm
     list_display = ('title', 'description', 'online_payment')
 
 

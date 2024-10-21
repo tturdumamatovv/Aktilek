@@ -99,6 +99,9 @@ class MethodsOfPayment(models.Model):
         verbose_name = _("Способ оплаты")
         verbose_name_plural = _("Способы оплаты")
 
+    def __str__(self):
+        return self.title
+
 
 class Redirection(models.Model):
     page = models.ForeignKey(MainPage, related_name='redirection', on_delete=models.CASCADE)
