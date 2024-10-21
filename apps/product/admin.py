@@ -81,9 +81,8 @@ class ProductSizeInline(TabularInline):
     extra = 0
 
 
-class CharacteristicInline(TabularInline):
+class CharacteristicInline(TabularInline, TranslationTabularInline):
     model = Characteristic
-    form = CharacteristicInlineForm
     extra = 0
     exclude = ['name', 'value']
 
