@@ -105,7 +105,7 @@ class Product(models.Model):
     bonus_price = models.DecimalField(default=0, max_digits=10, decimal_places=2, verbose_name=_('Цена бонусами'))
     is_ordered = models.BooleanField(default=False, verbose_name='Заказан')
     similar_products = models.ManyToManyField('self', blank=True, symmetrical=False, verbose_name=_('Похожие продукты'))
-    datetime = models.DateTimeField(auto_now_add=True, verbose_name=_("Дата добавления"), null=True)
+    datetime = models.DateTimeField(auto_now_add=True, verbose_name=_("Дата добавления"))
     views_count = models.PositiveIntegerField(default=0, verbose_name=_('Количество просмотров'))
 
     class Meta:
