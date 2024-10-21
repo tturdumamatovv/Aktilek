@@ -1,9 +1,10 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, status, permissions
 from rest_framework.exceptions import NotFound
-from rest_framework.views import APIView
+from django.db.models import Avg, F, ExpressionWrapper, DecimalField
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.filters import OrderingFilter
 
 from .serializers import FavoriteProductSerializer
 
@@ -78,8 +79,9 @@ class ProductBonusView(generics.ListAPIView):
 
 
 class ProductListByCategorySlugView(generics.ListAPIView):
-    filter_backends = [DjangoFilterBackend]
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_class = ProductFilter
+    ordering_fields = ['average_rating', 'views_count', 'datetime', 'discounted_price']
 
     def get_queryset(self):
         slug = self.kwargs['slug']
@@ -88,13 +90,21 @@ class ProductListByCategorySlugView(generics.ListAPIView):
         except Category.DoesNotExist:
             raise NotFound("Категория не найдена")
 
-        # Возвращаем активные продукты, связанные с выбранной категорией
-        return Product.objects.filter(category=category, is_active=True), category  # Возвращаем также категорию
+        # Annotate the products with an average rating
+        queryset = Product.objects.filter(category=category, is_active=True).annotate(
+            average_rating=Avg('product_reviews__rating'),
+            final_price=ExpressionWrapper(
+                F('price') - F('discounted_price'), output_field=DecimalField(max_digits=10, decimal_places=2)
+            )
+        )
+
+        return queryset
 
     def get(self, request, *args, **kwargs):
-        queryset, category = self.get_queryset()  # Получаем также категорию
+        queryset = self.get_queryset()  # Получаем также категорию
         filtered_queryset = self.filter_queryset(queryset)  # Применяем фильтры
 
+        category = Category.objects.get(slug=self.kwargs['slug'])
         serializer = CategoryProductSerializer(category, context={'request': request})
         serializer_data = serializer.data
         serializer_data['products'] = ProductSerializer(filtered_queryset, many=True, context={'request': request}).data
