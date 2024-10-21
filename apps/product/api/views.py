@@ -80,6 +80,7 @@ class ProductListByCategorySlugView(generics.ListAPIView):
     filter_backends = [DjangoFilterBackend]
     filterset_class = ProductFilter
     ordering_fields = ['datetime', 'views_count', 'average_rating', 'final_price']
+    ordering = ['-datetime']
 
     def get_queryset(self):
         slug = self.kwargs['slug']
@@ -88,7 +89,7 @@ class ProductListByCategorySlugView(generics.ListAPIView):
         except Category.DoesNotExist:
             raise NotFound("Категория не найдена")
 
-        # Возвращаем активные продукты, связанные с выбранной категорией
+        # Annotate final_price as either discounted_price or price
         queryset = Product.objects.filter(category=category, is_active=True).annotate(
             average_rating=Avg('product_reviews__rating'),
             final_price=Case(
@@ -96,16 +97,17 @@ class ProductListByCategorySlugView(generics.ListAPIView):
                 default=F('price'),
                 output_field=models.DecimalField()
             )
-        )  # Возвращаем также категорию
-
+        )
+        print(queryset.query)
         return queryset
 
     def get(self, request, *args, **kwargs):
         queryset = self.get_queryset()
+        print("Ordering Parameter:", request.query_params.get('ordering', ''))
         filtered_queryset = self.filter_queryset(queryset)
 
-        # Apply ordering (by default, we can use 'datetime')
         ordered_queryset = self.filter_backends[-1]().filter_queryset(request, filtered_queryset, self)
+        print("Ordered Queryset SQL:", str(ordered_queryset.query))
 
         category = Category.objects.get(slug=self.kwargs['slug'])
         serializer = CategoryProductSerializer(category, context={'request': request})
