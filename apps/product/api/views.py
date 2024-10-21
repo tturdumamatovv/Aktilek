@@ -126,7 +126,6 @@ class PromotedCategoryListView(generics.ListAPIView):
         return Category.objects.filter(is_promoted=True)
 
 
-
 class PopularProducts(generics.ListAPIView):
     serializer_class = ProductSerializer
 

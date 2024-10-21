@@ -389,11 +389,11 @@ class CategoryProductSerializer(serializers.ModelSerializer):
         price_max = products.aggregate(Max('discounted_price'))['discounted_price__max'] or \
                     products.aggregate(Max('price'))['price__max']
 
-        # Список доступных размеров
-        sizes = list(set(products.values_list('product_sizes__size__name', flat=True)))
-        countries = list(set(products.values_list('country__name', flat=True)))
-        genders = list(set(products.values_list('gender__name', flat=True)))
-        colors = list(set(products.values_list('product_sizes__color__name', flat=True)))
+        # Список доступных размеров, убираем None
+        sizes = list(filter(None, set(products.values_list('product_sizes__size__name', flat=True))))
+        countries = list(filter(None, set(products.values_list('country__name', flat=True))))
+        genders = list(filter(None, set(products.values_list('gender__name', flat=True))))
+        colors = list(filter(None, set(products.values_list('product_sizes__color__name', flat=True))))
 
         # Получаем все средние рейтинги для всех продуктов
         average_ratings = list(
@@ -405,11 +405,11 @@ class CategoryProductSerializer(serializers.ModelSerializer):
         return {
             'price_min': price_min,
             'price_max': price_max,
-            'sizes': list(sizes),
-            'countries': list(countries),
-            'genders': list(genders),
-            'colors': list(colors),
-            'average_ratings': list(unique_ratings)  # Возвращаем список уникальных рейтингов
+            'sizes': sizes,  # Список размеров без None
+            'countries': countries,  # Список стран без None
+            'genders': genders,  # Список полов без None
+            'colors': colors,  # Список цветов без None
+            'average_ratings': list(unique_ratings)  # Возвращаем список уникальных рейтингов без None
         }
 
     def get_parent_category(self, obj):
