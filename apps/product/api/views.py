@@ -1,7 +1,8 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, status, permissions
 from rest_framework.exceptions import NotFound
-from rest_framework.views import APIView
+from django.db.models import F, Case, When, Avg
+from django.db import models
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
@@ -12,8 +13,6 @@ from apps.product.api.serializers import (
     ProductSerializer,
     CategoryProductSerializer,
     CategoryOnlySerializer,
-    ProductSizeWithBonusSerializer,
-    ProductSizeSerializer,
     ProductSizeIdListSerializer,
     FavoriteProduct,
     ReviewCreateSerializer,
@@ -43,6 +42,13 @@ class ProductDetailView(generics.RetrieveAPIView):
     serializer_class = ProductDetailSerializer
     lookup_field = 'id'
 
+    def get(self, request, *args, **kwargs):
+        response = super().get(request, *args, **kwargs)
+        product = self.get_object()
+        product.views_count += 1
+        product.save(update_fields=['views_count'])
+        return response
+
     def get_serializer_context(self):
         # Добавляем request в контекст для сериализатора
         return {'request': self.request}
@@ -52,6 +58,13 @@ class ProductDetailBySlugView(generics.RetrieveAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductDetailSerializer
     lookup_field = 'slug'
+
+    def get(self, request, *args, **kwargs):
+        response = super().get(request, *args, **kwargs)
+        product = self.get_object()
+        product.views_count += 1
+        product.save(update_fields=['views_count'])
+        return response
 
     def get_serializer_context(self):
         # Добавляем request в контекст для сериализатора
@@ -66,6 +79,7 @@ class ProductBonusView(generics.ListAPIView):
 class ProductListByCategorySlugView(generics.ListAPIView):
     filter_backends = [DjangoFilterBackend]
     filterset_class = ProductFilter
+    ordering_fields = ['datetime', 'views_count', 'average_rating', 'final_price']
 
     def get_queryset(self):
         slug = self.kwargs['slug']
@@ -75,15 +89,28 @@ class ProductListByCategorySlugView(generics.ListAPIView):
             raise NotFound("Категория не найдена")
 
         # Возвращаем активные продукты, связанные с выбранной категорией
-        return Product.objects.filter(category=category, is_active=True), category  # Возвращаем также категорию
+        queryset = Product.objects.filter(category=category, is_active=True).annotate(
+            average_rating=Avg('product_reviews__rating'),
+            final_price=Case(
+                When(discounted_price__isnull=False, then=F('discounted_price')),
+                default=F('price'),
+                output_field=models.DecimalField()
+            )
+        )  # Возвращаем также категорию
+
+        return queryset
 
     def get(self, request, *args, **kwargs):
-        queryset, category = self.get_queryset()  # Получаем также категорию
-        filtered_queryset = self.filter_queryset(queryset)  # Применяем фильтры
+        queryset = self.get_queryset()
+        filtered_queryset = self.filter_queryset(queryset)
 
+        # Apply ordering (by default, we can use 'datetime')
+        ordered_queryset = self.filter_backends[-1]().filter_queryset(request, filtered_queryset, self)
+
+        category = Category.objects.get(slug=self.kwargs['slug'])
         serializer = CategoryProductSerializer(category, context={'request': request})
         serializer_data = serializer.data
-        serializer_data['products'] = ProductSerializer(filtered_queryset, many=True, context={'request': request}).data
+        serializer_data['products'] = ProductSerializer(ordered_queryset, many=True, context={'request': request}).data
 
         return Response(serializer_data)
 

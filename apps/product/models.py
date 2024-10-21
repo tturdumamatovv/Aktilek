@@ -17,7 +17,7 @@ from apps.authentication.models import User
 
 
 class Size(models.Model):
-    name = models.CharField(max_length=50, verbose_name=_('Название'))
+    name = models.CharField(max_length=50, verbose_name=_('Название'), unique=True)
 
     class Meta:
         verbose_name = "Размер"
@@ -25,6 +25,11 @@ class Size(models.Model):
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        # Normalize the name to lowercase to ensure uniqueness
+        self.name = self.name.lower()
+        super().save(*args, **kwargs)
 
 
 class Tag(models.Model):
@@ -71,6 +76,7 @@ class Category(MPTTModel):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(unidecode(self.name))
+        self.name = self.name.lower()
         super().save(*args, **kwargs)
 
 
@@ -99,6 +105,8 @@ class Product(models.Model):
     bonus_price = models.DecimalField(default=0, max_digits=10, decimal_places=2, verbose_name=_('Цена бонусами'))
     is_ordered = models.BooleanField(default=False, verbose_name='Заказан')
     similar_products = models.ManyToManyField('self', blank=True, symmetrical=False, verbose_name=_('Похожие продукты'))
+    datetime = models.DateTimeField(auto_now_add=True, verbose_name=_("Дата добавления"), null=True)
+    views_count = models.PositiveIntegerField(default=0, verbose_name=_('Количество просмотров'))
 
     class Meta:
         verbose_name = "Продукт"
@@ -179,12 +187,17 @@ class Product(models.Model):
 
 
 class Color(models.Model):
-    name = models.CharField(max_length=50, verbose_name=_('Цвет'))
+    name = models.CharField(max_length=50, verbose_name=_('Цвет'), unique=True)
     hex_code = ColorField(default='#FFFFFF', format='hex', verbose_name=_('HEX Код'))
 
     class Meta:
         verbose_name = "Цвет"
         verbose_name_plural = "Цвета"
+
+    def save(self, *args, **kwargs):
+        # Normalize the name to lowercase to ensure uniqueness
+        self.name = self.name.lower()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
