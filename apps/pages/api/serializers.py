@@ -85,7 +85,7 @@ class MainPageSerializer(serializers.ModelSerializer):
     class Meta:
         model = MainPage
         fields = ['icon', 'phone', 'meta_title', 'meta_description', 'meta_image', 'meta_keywords', 'order_types',
-                  'delivery_conditions', 'redirection']
+                  'delivery_conditions', 'redirection', 'maintenance']
 
 
 class HomePageSerializer(serializers.Serializer):

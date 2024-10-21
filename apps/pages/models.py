@@ -58,6 +58,7 @@ class MainPage(SingletonModel):
     )
     meta_keywords = models.TextField(verbose_name=_('Ключевые слова (keywords)'), help_text=_('Ключевые слова для SEO'),
                                      blank=True, null=True)
+    maintenance = models.BooleanField(default=False, verbose_name=_("Технические работы"))
 
     class Meta:
         verbose_name = _("Главная страница")
