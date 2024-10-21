@@ -509,7 +509,6 @@ class ProductShortSerializer(serializers.ModelSerializer):
         return round(obj.product_reviews.aggregate(Avg('rating'))['rating__avg'] or 0)
 
 
-
 class ReviewCreateSerializer(serializers.ModelSerializer):
     images = ReviewImageSerializer(many=True, required=False)  # Поле для изображений
     created_at = serializers.SerializerMethodField()
