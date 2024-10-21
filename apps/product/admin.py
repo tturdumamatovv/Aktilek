@@ -114,7 +114,7 @@ class CategoryAdmin(ModelAdmin, DraggableMPTTAdmin, TabbedTranslationAdmin):
 @admin.register(Product)
 class ProductAdmin(ModelAdmin, SortableAdminMixin, TabbedTranslationAdmin):
     form = ProductAdminForm
-    list_display = ('order', 'name', 'category', 'description', 'is_active')
+    list_display = ('order', 'name', 'category', 'description', 'is_active', 'datetime')
     search_fields = ('name',)
     list_filter = ('category',)
     filter_horizontal = ('tags', 'similar_products')  # 'ingredients')
