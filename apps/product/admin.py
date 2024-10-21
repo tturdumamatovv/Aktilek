@@ -84,7 +84,6 @@ class ProductSizeInline(TabularInline):
 class CharacteristicInline(TabularInline, TranslationTabularInline):
     model = Characteristic
     extra = 0
-    exclude = ['name', 'value']
 
 
 class ReviewInline(TabularInline):
