@@ -1,8 +1,7 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, status, permissions
 from rest_framework.exceptions import NotFound
-from django.db.models import F, Case, When, Avg
-from django.db import models
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
@@ -13,6 +12,8 @@ from apps.product.api.serializers import (
     ProductSerializer,
     CategoryProductSerializer,
     CategoryOnlySerializer,
+    ProductSizeWithBonusSerializer,
+    ProductSizeSerializer,
     ProductSizeIdListSerializer,
     FavoriteProduct,
     ReviewCreateSerializer,
@@ -79,8 +80,6 @@ class ProductBonusView(generics.ListAPIView):
 class ProductListByCategorySlugView(generics.ListAPIView):
     filter_backends = [DjangoFilterBackend]
     filterset_class = ProductFilter
-    ordering_fields = ['datetime', 'views_count', 'average_rating', 'final_price']
-    ordering = ['-datetime']
 
     def get_queryset(self):
         slug = self.kwargs['slug']
@@ -89,30 +88,16 @@ class ProductListByCategorySlugView(generics.ListAPIView):
         except Category.DoesNotExist:
             raise NotFound("Категория не найдена")
 
-        # Annotate final_price as either discounted_price or price
-        queryset = Product.objects.filter(category=category, is_active=True).annotate(
-            average_rating=Avg('product_reviews__rating'),
-            final_price=Case(
-                When(discounted_price__isnull=False, then=F('discounted_price')),
-                default=F('price'),
-                output_field=models.DecimalField()
-            )
-        )
-        print(queryset.query)
-        return queryset
+        # Возвращаем активные продукты, связанные с выбранной категорией
+        return Product.objects.filter(category=category, is_active=True), category  # Возвращаем также категорию
 
     def get(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
-        print("Ordering Parameter:", request.query_params.get('ordering', ''))
-        filtered_queryset = self.filter_queryset(queryset)
+        queryset, category = self.get_queryset()  # Получаем также категорию
+        filtered_queryset = self.filter_queryset(queryset)  # Применяем фильтры
 
-        ordered_queryset = self.filter_backends[-1]().filter_queryset(request, filtered_queryset, self)
-        print("Ordered Queryset SQL:", str(ordered_queryset.query))
-
-        category = Category.objects.get(slug=self.kwargs['slug'])
         serializer = CategoryProductSerializer(category, context={'request': request})
         serializer_data = serializer.data
-        serializer_data['products'] = ProductSerializer(ordered_queryset, many=True, context={'request': request}).data
+        serializer_data['products'] = ProductSerializer(filtered_queryset, many=True, context={'request': request}).data
 
         return Response(serializer_data)
 
