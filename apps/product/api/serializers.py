@@ -15,7 +15,7 @@ from apps.product.models import (
     Size,
     Country,
     Gender,
-    ReviewImage
+    ReviewImage, SizeChart
 )
 
 
@@ -242,6 +242,12 @@ class ProductSimpleSerializer(serializers.ModelSerializer):
         return representation
 
 
+class SizeChartSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SizeChart
+        fields = ['name', 'image']
+
+
 class ProductDetailSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True)
     product_sizes = ProductSizeSerializer(many=True, read_only=True)
@@ -257,9 +263,8 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     is_ordered = serializers.BooleanField(read_only=True)
     is_active = serializers.BooleanField()
     images = ProductImageSerializer(many=True, read_only=True)
-
-    # Теперь мы можем использовать поле `similar_products` напрямую
     similar_products = serializers.SerializerMethodField()
+    size_charts = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -267,7 +272,12 @@ class ProductDetailSerializer(serializers.ModelSerializer):
                   'price', 'discounted_price', 'bonus_price', 'product_sizes',
                   'category_slug', 'category_name', 'is_favorite',
                   'reviews', 'characteristics', 'average_rating',
-                  'review_count', 'gender', 'country', 'is_ordered', 'is_active', 'similar_products', 'size_chart']
+                  'review_count', 'gender', 'country', 'is_ordered', 'is_active', 'similar_products', 'size_charts']
+
+    def get_size_charts(self, obj):
+        # Получаем все размерные сетки, связанные с продуктом
+        size_charts = obj.size_charts.all()
+        return SizeChartSerializer(size_charts, many=True).data
 
     def get_category_slug(self, obj):
         if obj.category:

@@ -107,7 +107,6 @@ class Product(models.Model):
     similar_products = models.ManyToManyField('self', blank=True, symmetrical=False, verbose_name=_('Похожие продукты'))
     datetime = models.DateTimeField(auto_now_add=True, verbose_name=_("Дата добавления"))
     views_count = models.PositiveIntegerField(default=0, verbose_name=_('Количество просмотров'))
-    size_chart = models.FileField(upload_to='product_size_chart', verbose_name=_("Изображения 'Размерная сетка'"), null=True)
 
     class Meta:
         verbose_name = "Продукт"
@@ -185,6 +184,19 @@ class Product(models.Model):
 
         self.process_and_save_image()
         super().save(*args, **kwargs)
+
+
+class SizeChart(models.Model):
+    product = models.ForeignKey(Product, related_name='size_charts', on_delete=models.CASCADE, verbose_name=_('Продукт'))
+    name = models.CharField(max_length=100, verbose_name=_('Название'))
+    image = models.ImageField(upload_to='size_charts/', verbose_name=_('Изображение'))
+
+    class Meta:
+        verbose_name = _('Размерная сетка')
+        verbose_name_plural = _('Размерные сетки')
+
+    def __str__(self):
+        return self.name
 
 
 class Color(models.Model):
