@@ -189,7 +189,7 @@ class Product(models.Model):
 
 class SizeChart(models.Model):
     name = models.CharField(max_length=100, verbose_name=_('Название'))
-    image = models.ImageField(upload_to='size_charts/', verbose_name=_('Изображение'))
+    image = models.FileField(upload_to='size_charts/', verbose_name=_('Изображение'))
 
     class Meta:
         verbose_name = _('Размерная сетка')
