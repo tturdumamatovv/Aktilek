@@ -88,11 +88,6 @@ class ProductDetailBySlugView(generics.RetrieveAPIView):
         return {'request': self.request}
 
 
-class ProductBonusView(generics.ListAPIView):
-    queryset = Product.objects.filter(bonus_price__gt=0)
-    serializer_class =  ProductSerializer
-
-
 class ProductListByCategorySlugView(generics.ListAPIView):
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_class = ProductFilter
@@ -105,9 +100,13 @@ class ProductListByCategorySlugView(generics.ListAPIView):
         except Category.DoesNotExist:
             raise NotFound("Категория не найдена")
 
+        # Получаем все подкатегории для выбранной категории
         subcategories = category.subcategories.values_list('id', flat=True)
 
-        queryset = Product.objects.filter(category=category, is_active=True).annotate(
+        # Получаем продукты из основной категории и всех подкатегорий
+        queryset = Product.objects.filter(
+            Q(category=category) | Q(category__id__in=subcategories), is_active=True
+        ).annotate(
             average_rating=Avg('product_reviews__rating'),
             final_price=ExpressionWrapper(
                 F('price') - F('discounted_price'), output_field=DecimalField(max_digits=10, decimal_places=2)
@@ -117,8 +116,8 @@ class ProductListByCategorySlugView(generics.ListAPIView):
         return queryset
 
     def get(self, request, *args, **kwargs):
-        queryset = self.get_queryset()  # Получаем также категорию
-        filtered_queryset = self.filter_queryset(queryset)  # Применяем фильтры
+        queryset = self.get_queryset()
+        filtered_queryset = self.filter_queryset(queryset)
 
         category = Category.objects.get(slug=self.kwargs['slug'])
         serializer = CategoryProductSerializer(category, context={'request': request})
