@@ -233,7 +233,7 @@ class ProductSize(models.Model):
 
 class Country(models.Model):
     name = models.CharField(max_length=255, verbose_name='Страна')
-    logo = models.FileField(upload_to='countries', verbose_name='Флаг Страны')
+    logo = models.ImageField(upload_to='countries', verbose_name='Флаг Страны')
 
     class Meta:
         verbose_name = "Страна"
