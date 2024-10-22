@@ -1,6 +1,5 @@
 import os
 from io import BytesIO
-from itertools import batched
 
 from mptt.models import MPTTModel, TreeForeignKey
 
