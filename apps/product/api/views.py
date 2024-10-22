@@ -112,6 +112,9 @@ class ProductListByCategorySlugView(generics.ListAPIView):
                 F('price') - F('discounted_price'), output_field=DecimalField(max_digits=10, decimal_places=2)
             )
         )
+        ordering = self.request.query_params.get('ordering', None)
+        if ordering:
+            queryset = queryset.order_by(ordering)
 
         return queryset
 
