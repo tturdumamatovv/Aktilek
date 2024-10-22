@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.filters import OrderingFilter
 
-from .serializers import FavoriteProductSerializer
+from .serializers import FavoriteProductSerializer, ReviewSerializer
 
 from apps.product.api.filters import ProductFilter
 from apps.product.api.serializers import (
@@ -54,6 +54,21 @@ class ProductDetailView(generics.RetrieveAPIView):
     def get_serializer_context(self):
         # Добавляем request в контекст для сериализатора
         return {'request': self.request}
+
+
+class ProductReviewsView(generics.ListAPIView):
+    serializer_class = ReviewSerializer
+
+    def get_queryset(self):
+        product_id = self.kwargs['product_id']  # Получаем product_id из URL
+        return Review.objects.filter(product_id=product_id)  # Фильтруем отзывы по product_id
+
+    def get(self, request, *args, **kwargs):
+        response = super().get(request, *args, **kwargs)
+        return Response({
+            'product_id': kwargs['product_id'],
+            'reviews': response.data
+        })
 
 
 class ProductDetailBySlugView(generics.RetrieveAPIView):
