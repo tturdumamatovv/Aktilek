@@ -96,7 +96,6 @@ class ProductBonusView(generics.ListAPIView):
 class ProductListByCategorySlugView(generics.ListAPIView):
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_class = ProductFilter
-    ordering_fields = ['average_rating', 'views_count', 'datetime', 'discounted_price']
 
     def get_queryset(self):
         slug = self.kwargs['slug']
@@ -105,7 +104,7 @@ class ProductListByCategorySlugView(generics.ListAPIView):
         except Category.DoesNotExist:
             raise NotFound("Категория не найдена")
 
-        # Annotate the products with an average rating
+        # Запрашиваем продукты из выбранной категории
         queryset = Product.objects.filter(category=category, is_active=True).annotate(
             average_rating=Avg('product_reviews__rating'),
             final_price=ExpressionWrapper(
