@@ -264,7 +264,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     is_active = serializers.BooleanField()
     images = ProductImageSerializer(many=True, read_only=True)
     similar_products = serializers.SerializerMethodField()
-    size_charts = serializers.SerializerMethodField()
+    size_chart = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
