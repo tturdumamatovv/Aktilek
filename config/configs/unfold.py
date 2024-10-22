@@ -46,7 +46,7 @@ UNFOLD = {
             "rel": "icon",
             "sizes": "32x32",
             "type": "image/svg+xml",
-            "href": lambda request: config_instance.site_logo,
+            "href": lambda request: config_instance.site_meta_image,
         },
     ],
     "SHOW_HISTORY": False,  # show/hide "History" button, default: True
