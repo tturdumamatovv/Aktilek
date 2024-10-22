@@ -1,7 +1,7 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, status, permissions
 from rest_framework.exceptions import NotFound
-from django.db.models import Avg, F, ExpressionWrapper, DecimalField
+from django.db.models import Avg, F, ExpressionWrapper, DecimalField, Q
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.filters import OrderingFilter
