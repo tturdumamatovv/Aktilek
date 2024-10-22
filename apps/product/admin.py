@@ -134,7 +134,6 @@ class ToppingAdmin(ExcludeBaseFieldsMixin, TranslationAdmin):
 class SizeChartAdmin(ExcludeBaseFieldsMixin):
     list_display = ('name', 'image')
     search_fields = ('name',)
-    exclude_base_fields = ('name',)
 
 
 @admin.register(Country)
