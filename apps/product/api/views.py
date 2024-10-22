@@ -1,7 +1,7 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, status, permissions
 from rest_framework.exceptions import NotFound
-from django.db.models import Avg, F, ExpressionWrapper, DecimalField, Q
+from django.db.models import Avg, F, ExpressionWrapper, DecimalField
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.filters import OrderingFilter
@@ -101,35 +101,34 @@ class ProductListByCategorySlugView(generics.ListAPIView):
     def get_queryset(self):
         slug = self.kwargs['slug']
         try:
-            category = Category.objects.get(slug=slug)
+            # Получаем все активные продукты, независимо от категории
+            products = Product.objects.filter(is_active=True)
+
+            # Если есть слаг категории, фильтруем по нему
+            if slug:
+                category = Category.objects.get(slug=slug)
+                products = products.filter(category=category)
+
+            # Аннотируем продукты с усредненным рейтингом
+            products = products.annotate(
+                average_rating=Avg('product_reviews__rating'),
+                final_price=ExpressionWrapper(
+                    F('price') - F('discounted_price'), output_field=DecimalField(max_digits=10, decimal_places=2)
+                )
+            )
+
+            return products
+
         except Category.DoesNotExist:
             raise NotFound("Категория не найдена")
 
-        # Получаем все продукты из категории и подкатегорий, избегая дублирования
-        product_ids = Product.objects.filter(
-            Q(category=category) | Q(category__in=category.subcategories.all()),
-            is_active=True
-        ).values_list('id', flat=True)
-
-        # Убираем дубликаты и возвращаем уникальные продукты
-        return Product.objects.filter(id__in=product_ids).annotate(
-            average_rating=Avg('product_reviews__rating'),
-            final_price=ExpressionWrapper(
-                F('price') - F('discounted_price'),
-                output_field=DecimalField(max_digits=10, decimal_places=2)
-            )
-        )
-
     def get(self, request, *args, **kwargs):
-        queryset = self.get_queryset()  # Получаем продукты
+        queryset = self.get_queryset()
         filtered_queryset = self.filter_queryset(queryset)  # Применяем фильтры
 
-        category = Category.objects.get(slug=self.kwargs['slug'])
-        serializer = CategoryProductSerializer(category, context={'request': request})
-        serializer_data = serializer.data
-        serializer_data['products'] = ProductSerializer(filtered_queryset, many=True, context={'request': request}).data
+        serializer = ProductSerializer(filtered_queryset, many=True, context={'request': request}).data
 
-        return Response(serializer_data)
+        return Response(serializer)
 
 
 # class SetListView(generics.ListAPIView):
