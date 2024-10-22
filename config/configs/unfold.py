@@ -2,16 +2,26 @@ from django.templatetags.static import static
 from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
 
+from django.utils.functional import cached_property
+
+
+class Config:
+    @cached_property
+    def main_page(self):
+        from apps.pages.models import MainPage  # Отложенный импорт
+        return MainPage.objects.first()
+
+
 UNFOLD = {
     "SITE_TITLE": "Aktilek Admin",
     "SITE_HEADER": "Aktilek Admin",
     "SITE_URL": "/",
-    # "SITE_ICON": lambda request: static("icon.svg"),  # both modes, optimise for 32px height
+    "SITE_ICON": lambda request: static(Config().main_page.icon.url) if Config().main_page and Config().main_page.icon else None,  # both modes, optimise for 32px height
     # "SITE_ICON": {
     #     "light": lambda request: static("icon-light.svg"),  # light mode
     #     "dark": lambda request: static("icon-dark.svg"),  # dark mode
     # },
-    # # "SITE_LOGO": lambda request: static("logo.svg"),  # both modes, optimise for 32px height
+    "SITE_LOGO": lambda request: static(Config().main_page.icon.url) if Config().main_page and Config().main_page.icon else None,  # both modes, optimise for 32px height
     # "SITE_LOGO": {
     #     "light": lambda request: static("logo-light.svg"),  # light mode
     #     "dark": lambda request: static("logo-dark.svg"),  # dark mode
