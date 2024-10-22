@@ -275,9 +275,10 @@ class ProductDetailSerializer(serializers.ModelSerializer):
                   'review_count', 'gender', 'country', 'is_ordered', 'is_active', 'similar_products', 'size_chart']
 
     def get_size_chart(self, obj):
-        # Получаем размерную сетку, связанную с продуктом
         if obj.size_chart:
-            return SizeChartSerializer(obj.size_chart).data  # Возвращаем только изображение размерной сетки
+            return {
+                "image": obj.size_chart.image.url  # Возвращаем полный URL изображения
+            }
         return None
 
     def get_category_slug(self, obj):
