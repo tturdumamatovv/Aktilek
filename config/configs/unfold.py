@@ -19,6 +19,10 @@ class Config:
     def site_logo(self):
         return self.main_page.icon.url if self.main_page and self.main_page.icon else None
 
+    @cached_property
+    def site_meta_image(self):
+        return self.main_page.meta_image.url if self.main_page and self.main_page.meta_image else None
+
 # Переименуйте экземпляр класса
 config_instance = Config()
 
@@ -50,7 +54,7 @@ UNFOLD = {
     # "ENVIRONMENT": "sample_app.environment_callback",
     # "DASHBOARD_CALLBACK": "sample_app.dashboard_callback",
     "LOGIN": {
-        # "image": lambda request: static("sample/Frame 1261153158.png"),
+        "image": lambda request: config_instance.site_meta_image,
         "redirect_after": lambda request: reverse_lazy("admin:authentication_user_changelist"),
     },
     # "STYLES": [
