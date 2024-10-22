@@ -37,20 +37,20 @@ UNFOLD = {
     #     "dark": lambda request: static("logo-dark.svg"),  # dark mode
     # },
     "SITE_SYMBOL": "speed",  # symbol from icon set
-    # "SITE_FAVICONS": [
-    #     {
-    #         "rel": "icon",
-    #         "sizes": "32x32",
-    #         "type": "image/svg+xml",
-    #         "href": lambda request: static("favicon.svg"),
-    #     },
-    # ],
+    "SITE_FAVICONS": [
+        {
+            "rel": "icon",
+            "sizes": "32x32",
+            "type": "image/svg+xml",
+            "href": lambda request: config_instance.site_logo,
+        },
+    ],
     "SHOW_HISTORY": False,  # show/hide "History" button, default: True
     "SHOW_VIEW_ON_SITE": True,  # show/hide "View on site" button, default: True
     # "ENVIRONMENT": "sample_app.environment_callback",
     # "DASHBOARD_CALLBACK": "sample_app.dashboard_callback",
     "LOGIN": {
-        # "image": lambda request: static("sample/login-bg.jpg"),
+        # "image": lambda request: static("sample/Frame 1261153158.png"),
         "redirect_after": lambda request: reverse_lazy("admin:authentication_user_changelist"),
     },
     # "STYLES": [
