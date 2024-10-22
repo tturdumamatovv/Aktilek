@@ -88,6 +88,11 @@ class ProductDetailBySlugView(generics.RetrieveAPIView):
         return {'request': self.request}
 
 
+class ProductBonusView(generics.ListAPIView):
+    queryset = Product.objects.filter(bonus_price__gt=0)
+    serializer_class =  ProductSerializer
+
+
 class ProductListByCategorySlugView(generics.ListAPIView):
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_class = ProductFilter
