@@ -96,6 +96,7 @@ class ProductBonusView(generics.ListAPIView):
 class ProductListByCategorySlugView(generics.ListAPIView):
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_class = ProductFilter
+    ordering_fields = ['average_rating', 'views_count', 'datetime', 'discounted_price']  # Убедитесь, что этот атрибут присутствует
 
     def get_queryset(self):
         slug = self.kwargs['slug']
