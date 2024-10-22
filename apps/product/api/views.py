@@ -105,13 +105,23 @@ class ProductListByCategorySlugView(generics.ListAPIView):
         except Category.DoesNotExist:
             raise NotFound("Категория не найдена")
 
-
+        # Аннотация продуктов с рейтингом
         queryset = Product.objects.filter(category=category, is_active=True).annotate(
             average_rating=Avg('product_reviews__rating'),
             final_price=ExpressionWrapper(
                 F('price') - F('discounted_price'), output_field=DecimalField(max_digits=10, decimal_places=2)
             )
         )
+
+        # Если в категории нет продуктов, получаем продукты подкатегорий
+        if not queryset.exists():
+            subcategories = Category.objects.filter(parent=category)
+            queryset = Product.objects.filter(category__in=subcategories, is_active=True).annotate(
+                average_rating=Avg('product_reviews__rating'),
+                final_price=ExpressionWrapper(
+                    F('price') - F('discounted_price'), output_field=DecimalField(max_digits=10, decimal_places=2)
+                )
+            )
 
         return queryset
 
