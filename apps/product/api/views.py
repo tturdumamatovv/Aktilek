@@ -101,7 +101,7 @@ class ProductListByCategorySlugView(generics.ListAPIView):
     def get_queryset(self):
         slug = self.kwargs['slug']
         try:
-            category = Category.objects.get(slug=slug)
+            category = Category.objects.get(slug=slug, )
         except Category.DoesNotExist:
             raise NotFound("Категория не найдена")
 
