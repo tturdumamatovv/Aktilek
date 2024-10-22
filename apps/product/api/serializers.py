@@ -275,9 +275,10 @@ class ProductDetailSerializer(serializers.ModelSerializer):
                   'review_count', 'gender', 'country', 'is_ordered', 'is_active', 'similar_products', 'size_chart']
 
     def get_size_chart(self, obj):
+        request = self.context.get('request')
         if obj.size_chart:
             return {
-                "image": obj.size_chart.image.url  # Возвращаем полный URL изображения
+                "image": request.build_absolute_uri(obj.size_chart.image.url)  # Формируем полный URL
             }
         return None
 
