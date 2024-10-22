@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from django.db.models import Min, Max, Avg, F, ExpressionWrapper, DecimalField
+from django.db.models import Min, Max, Avg, F
 
 from apps.product.models import (
     Product,
@@ -387,22 +387,8 @@ class CategoryProductSerializer(serializers.ModelSerializer):
         return None
 
     def get_subcategories(self, obj):
-        # Получаем все подкатегории
+        # Рекурсивно сериализуем подкатегории
         subcategories = obj.subcategories.all()
-
-        # Получаем параметры сортировки из запроса
-        sort_param = self.context.get('request').query_params.get('ordering')
-
-        # Применяем сортировку только если параметр действителен
-        if sort_param in ['average_rating', 'views_count', 'datetime', 'discounted_price']:
-            subcategories = subcategories.annotate(
-                average_rating=Avg('product__product_reviews__rating'),  # Аннотация для среднего рейтинга
-                final_price=ExpressionWrapper(
-                    F('product__price') - F('product__discounted_price'),
-                    output_field=DecimalField(max_digits=10, decimal_places=2)
-                )
-            ).order_by(sort_param)
-
         serializer = CategoryProductSerializer(subcategories, many=True, context=self.context)
         return serializer.data
 
