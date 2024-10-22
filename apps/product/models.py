@@ -1,5 +1,6 @@
 import os
 from io import BytesIO
+from itertools import batched
 
 from mptt.models import MPTTModel, TreeForeignKey
 
@@ -99,6 +100,7 @@ class Product(models.Model):
     tags = models.ManyToManyField('Tag', related_name='products', verbose_name=_('Теги'), blank=True)
     order = models.PositiveIntegerField(default=0, editable=False, db_index=True)
     gender = models.ForeignKey('Gender', related_name='products', verbose_name=_('Пол'), on_delete=models.CASCADE)
+    size_chart = models.ForeignKey('SizeChart', related_name='products', verbose_name=_('Размерная Сетка'), on_delete=models.CASCADE, blank=True, null=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name=_('Цена'))
     discounted_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name=_('Цена со скидкой'),
                                            blank=True, null=True)
@@ -187,7 +189,6 @@ class Product(models.Model):
 
 
 class SizeChart(models.Model):
-    product = models.ForeignKey(Product, related_name='size_charts', on_delete=models.CASCADE, verbose_name=_('Продукт'))
     name = models.CharField(max_length=100, verbose_name=_('Название'))
     image = models.ImageField(upload_to='size_charts/', verbose_name=_('Изображение'))
 

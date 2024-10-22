@@ -245,7 +245,7 @@ class ProductSimpleSerializer(serializers.ModelSerializer):
 class SizeChartSerializer(serializers.ModelSerializer):
     class Meta:
         model = SizeChart
-        fields = ['name', 'image']
+        fields = ['image']
 
 
 class ProductDetailSerializer(serializers.ModelSerializer):
@@ -272,12 +272,13 @@ class ProductDetailSerializer(serializers.ModelSerializer):
                   'price', 'discounted_price', 'bonus_price', 'product_sizes',
                   'category_slug', 'category_name', 'is_favorite',
                   'reviews', 'characteristics', 'average_rating',
-                  'review_count', 'gender', 'country', 'is_ordered', 'is_active', 'similar_products', 'size_charts']
+                  'review_count', 'gender', 'country', 'is_ordered', 'is_active', 'similar_products', 'size_chart']
 
-    def get_size_charts(self, obj):
-        # Получаем все размерные сетки, связанные с продуктом
-        size_charts = obj.size_charts.all()
-        return SizeChartSerializer(size_charts, many=True).data
+    def get_size_chart(self, obj):
+        # Получаем размерную сетку, связанную с продуктом
+        if obj.size_chart:
+            return SizeChartSerializer(obj.size_chart).data  # Возвращаем только изображение размерной сетки
+        return None
 
     def get_category_slug(self, obj):
         if obj.category:
