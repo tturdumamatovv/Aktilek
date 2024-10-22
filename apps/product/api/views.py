@@ -97,6 +97,7 @@ class ProductListByCategorySlugView(generics.ListAPIView):
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_class = ProductFilter
     ordering_fields = ['average_rating', 'views_count', 'datetime', 'discounted_price']
+    ordering = ['-datetime']  # Установите порядок по умолчанию, если это необходимо
 
     def get_queryset(self):
         slug = self.kwargs['slug']
@@ -105,15 +106,20 @@ class ProductListByCategorySlugView(generics.ListAPIView):
         except Category.DoesNotExist:
             raise NotFound("Категория не найдена")
 
-        # Annotate the products with an average rating
-        queryset = Product.objects.filter(category=category, is_active=True).annotate(
+        # Получаем все продукты из выбранной категории и её подкатегорий
+        queryset = Product.objects.filter(
+            Q(category=category) | Q(category__in=category.subcategories.all()),
+            is_active=True
+        ).annotate(
             average_rating=Avg('product_reviews__rating'),
             final_price=ExpressionWrapper(
-                F('price') - F('discounted_price'), output_field=DecimalField(max_digits=10, decimal_places=2)
+                F('price') - F('discounted_price'),
+                output_field=DecimalField(max_digits=10, decimal_places=2)
             )
         )
 
-        return queryset
+        # Применяем сортировку
+        return self.filter_queryset(queryset)
 
     def get(self, request, *args, **kwargs):
         queryset = self.get_queryset()  # Получаем также категорию
