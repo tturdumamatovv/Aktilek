@@ -1,7 +1,7 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, status, permissions
 from rest_framework.exceptions import NotFound
-from django.db.models import Avg, F, ExpressionWrapper, DecimalField
+from django.db.models import Avg, F, ExpressionWrapper, DecimalField, Q
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.filters import OrderingFilter
@@ -105,8 +105,9 @@ class ProductListByCategorySlugView(generics.ListAPIView):
         except Category.DoesNotExist:
             raise NotFound("Категория не найдена")
 
-        # Annotate the products with an average rating
-        queryset = Product.objects.filter(category=category, is_active=True).annotate(
+        subcategories = category.subcategories.values_list('id', flat=True)
+
+        queryset = Product.objects.filter(Q(category=category) | Q(category__in=subcategories),is_active=True).annotate(
             average_rating=Avg('product_reviews__rating'),
             final_price=ExpressionWrapper(
                 F('price') - F('discounted_price'), output_field=DecimalField(max_digits=10, decimal_places=2)
