@@ -11,17 +11,27 @@ class Config:
         from apps.pages.models import MainPage  # Отложенный импорт
         return MainPage.objects.first()
 
+    @cached_property
+    def site_icon(self):
+        return self.main_page.icon.url if self.main_page and self.main_page.icon else None
+
+    @cached_property
+    def site_logo(self):
+        return self.main_page.icon.url if self.main_page and self.main_page.icon else None
+
+# Переименуйте экземпляр класса
+config_instance = Config()
 
 UNFOLD = {
     "SITE_TITLE": "Aktilek Admin",
     "SITE_HEADER": "Aktilek Admin",
     "SITE_URL": "/",
-    "SITE_ICON": lambda request: static(Config().main_page.icon.url) if Config().main_page and Config().main_page.icon else None,  # both modes, optimise for 32px height
+    "SITE_ICON": lambda request: config_instance.site_icon,   # both modes, optimise for 32px height
     # "SITE_ICON": {
     #     "light": lambda request: static("icon-light.svg"),  # light mode
     #     "dark": lambda request: static("icon-dark.svg"),  # dark mode
     # },
-    "SITE_LOGO": lambda request: static(Config().main_page.icon.url) if Config().main_page and Config().main_page.icon else None,  # both modes, optimise for 32px height
+    "SITE_LOGO": lambda request: config_instance.site_logo,   # both modes, optimise for 32px height
     # "SITE_LOGO": {
     #     "light": lambda request: static("logo-light.svg"),  # light mode
     #     "dark": lambda request: static("logo-dark.svg"),  # dark mode
