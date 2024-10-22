@@ -97,7 +97,6 @@ class ProductListByCategorySlugView(generics.ListAPIView):
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_class = ProductFilter
     ordering_fields = ['average_rating', 'views_count', 'datetime', 'discounted_price']
-    ordering = ['-datetime']  # Установите порядок по умолчанию, если это необходимо
 
     def get_queryset(self):
         slug = self.kwargs['slug']
@@ -106,11 +105,14 @@ class ProductListByCategorySlugView(generics.ListAPIView):
         except Category.DoesNotExist:
             raise NotFound("Категория не найдена")
 
-        # Получаем все продукты из выбранной категории и её подкатегорий
-        queryset = Product.objects.filter(
+        # Получаем все продукты из категории и подкатегорий, избегая дублирования
+        product_ids = Product.objects.filter(
             Q(category=category) | Q(category__in=category.subcategories.all()),
             is_active=True
-        ).annotate(
+        ).values_list('id', flat=True)
+
+        # Убираем дубликаты и возвращаем уникальные продукты
+        return Product.objects.filter(id__in=product_ids).annotate(
             average_rating=Avg('product_reviews__rating'),
             final_price=ExpressionWrapper(
                 F('price') - F('discounted_price'),
@@ -118,11 +120,8 @@ class ProductListByCategorySlugView(generics.ListAPIView):
             )
         )
 
-        # Применяем сортировку
-        return self.filter_queryset(queryset)
-
     def get(self, request, *args, **kwargs):
-        queryset = self.get_queryset()  # Получаем также категорию
+        queryset = self.get_queryset()  # Получаем продукты
         filtered_queryset = self.filter_queryset(queryset)  # Применяем фильтры
 
         category = Category.objects.get(slug=self.kwargs['slug'])
