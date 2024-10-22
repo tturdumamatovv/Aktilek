@@ -105,52 +105,24 @@ class ProductListByCategorySlugView(generics.ListAPIView):
         except Category.DoesNotExist:
             raise NotFound("Категория не найдена")
 
-        # Получаем все продукты, связанные с категорией
+        # Annotate the products with an average rating
         queryset = Product.objects.filter(category=category, is_active=True).annotate(
             average_rating=Avg('product_reviews__rating'),
             final_price=ExpressionWrapper(
-                F('price') - F('discounted_price'),
-                output_field=DecimalField(max_digits=10, decimal_places=2)
+                F('price') - F('discounted_price'), output_field=DecimalField(max_digits=10, decimal_places=2)
             )
         )
 
         return queryset
 
     def get(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
+        queryset = self.get_queryset()  # Получаем также категорию
         filtered_queryset = self.filter_queryset(queryset)  # Применяем фильтры
-
-        # Применяем сортировку к отфильтрованному queryset
-        ordering = self.request.query_params.get('ordering', None)
-        if ordering:
-            filtered_queryset = filtered_queryset.order_by(ordering)
 
         category = Category.objects.get(slug=self.kwargs['slug'])
         serializer = CategoryProductSerializer(category, context={'request': request})
         serializer_data = serializer.data
-
-        # Сортируем продукты из подкатегорий, которые уже находятся в serializer_data
-        products = []
-        for subcategory in serializer_data.get('subcategories', []):
-            products += subcategory.get('products', [])
-
-        # Применяем сортировку ко всем продуктам
-        products_queryset = sorted(
-            products,
-            key=lambda x: (
-                x['discounted_price'] if ordering == 'discounted_price' else
-                x['average_rating'] if ordering == 'average_rating' else
-                x['views_count'] if ordering == 'views_count' else
-                x['datetime'] if ordering == 'datetime' else
-                x['id']  # По умолчанию сортируем по id, если нет параметра ordering
-            )
-        )
-
-        # Добавляем отсортированные продукты в serializer_data
         serializer_data['products'] = ProductSerializer(filtered_queryset, many=True, context={'request': request}).data
-        serializer_data['subcategories'] = [
-            {**subcategory, 'products': products_queryset} for subcategory in serializer_data['subcategories']
-        ]
 
         return Response(serializer_data)
 
