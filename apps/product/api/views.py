@@ -105,27 +105,46 @@ class ProductListByCategorySlugView(generics.ListAPIView):
         except Category.DoesNotExist:
             raise NotFound("Категория не найдена")
 
-        # Annotate the products with an average rating
+        # Получаем все продукты, связанные с категорией
         queryset = Product.objects.filter(category=category, is_active=True).annotate(
             average_rating=Avg('product_reviews__rating'),
             final_price=ExpressionWrapper(
-                F('price') - F('discounted_price'), output_field=DecimalField(max_digits=10, decimal_places=2)
+                F('price') - F('discounted_price'),
+                output_field=DecimalField(max_digits=10, decimal_places=2)
             )
         )
-        ordering = self.request.query_params.get('ordering', None)
-        if ordering:
-            queryset = queryset.order_by(ordering)
 
         return queryset
 
     def get(self, request, *args, **kwargs):
-        queryset = self.get_queryset()  # Получаем также категорию
+        queryset = self.get_queryset()
         filtered_queryset = self.filter_queryset(queryset)  # Применяем фильтры
 
         category = Category.objects.get(slug=self.kwargs['slug'])
+
+        # Применяем сортировку к продуктам в подкатегориях
+        ordering = self.request.query_params.get('ordering', None)
+        if ordering:
+            filtered_queryset = filtered_queryset.order_by(ordering)
+
+        # Получаем продукты из подкатегорий и применяем к ним сортировку
+        subcategory_products = Product.objects.filter(category__in=category.subcategories.all(), is_active=True).annotate(
+            average_rating=Avg('product_reviews__rating'),
+            final_price=ExpressionWrapper(
+                F('price') - F('discounted_price'),
+                output_field=DecimalField(max_digits=10, decimal_places=2)
+            )
+        )
+
+        if ordering:
+            subcategory_products = subcategory_products.order_by(ordering)
+
+        # Объединяем продукты основной категории и подкатегорий
+        combined_queryset = filtered_queryset | subcategory_products
+
         serializer = CategoryProductSerializer(category, context={'request': request})
         serializer_data = serializer.data
-        serializer_data['products'] = ProductSerializer(filtered_queryset, many=True, context={'request': request}).data
+        serializer_data['products'] = ProductSerializer(combined_queryset, many=True, context={'request': request}).data
 
         return Response(serializer_data)
 
