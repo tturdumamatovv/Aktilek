@@ -105,7 +105,7 @@ class ProductListByCategorySlugView(generics.ListAPIView):
         except Category.DoesNotExist:
             raise NotFound("Категория не найдена")
 
-        # Аннотация продуктов с рейтингом
+        # Получаем продукты основной категории
         queryset = Product.objects.filter(category=category, is_active=True).annotate(
             average_rating=Avg('product_reviews__rating'),
             final_price=ExpressionWrapper(
@@ -113,9 +113,9 @@ class ProductListByCategorySlugView(generics.ListAPIView):
             )
         )
 
-        # Если в категории нет продуктов, получаем продукты подкатегорий
+        # Если в категории нет продуктов, переходим к подкатегориям
         if not queryset.exists():
-            subcategories = Category.objects.filter(parent=category)
+            subcategories = category.subcategories.all()
             queryset = Product.objects.filter(category__in=subcategories, is_active=True).annotate(
                 average_rating=Avg('product_reviews__rating'),
                 final_price=ExpressionWrapper(
@@ -126,12 +126,15 @@ class ProductListByCategorySlugView(generics.ListAPIView):
         return queryset
 
     def get(self, request, *args, **kwargs):
-        queryset = self.get_queryset()  # Получаем также категорию
+        queryset = self.get_queryset()
         filtered_queryset = self.filter_queryset(queryset)  # Применяем фильтры
 
+        # Получаем категорию и её продукты
         category = Category.objects.get(slug=self.kwargs['slug'])
         serializer = CategoryProductSerializer(category, context={'request': request})
         serializer_data = serializer.data
+
+        # Присваиваем отфильтрованные продукты
         serializer_data['products'] = ProductSerializer(filtered_queryset, many=True, context={'request': request}).data
 
         return Response(serializer_data)
