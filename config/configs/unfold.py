@@ -178,7 +178,7 @@ UNFOLD = {
                     {
                         "title": _("Размерная Сетка"),
                         "icon": "straighten",
-                        "link": reverse_lazy("admin:product_gender_changelist"),
+                        "link": reverse_lazy("admin:product_sizechart_changelist"),
                     },
                 ],
             },
