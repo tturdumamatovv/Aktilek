@@ -101,34 +101,30 @@ class ProductListByCategorySlugView(generics.ListAPIView):
     def get_queryset(self):
         slug = self.kwargs['slug']
         try:
-            # Получаем все активные продукты, независимо от категории
-            products = Product.objects.filter(is_active=True)
-
-            # Если есть слаг категории, фильтруем по нему
-            if slug:
-                category = Category.objects.get(slug=slug)
-                products = products.filter(category=category)
-
-            # Аннотируем продукты с усредненным рейтингом
-            products = products.annotate(
-                average_rating=Avg('product_reviews__rating'),
-                final_price=ExpressionWrapper(
-                    F('price') - F('discounted_price'), output_field=DecimalField(max_digits=10, decimal_places=2)
-                )
-            )
-
-            return products
-
+            category = Category.objects.get(slug=slug)
         except Category.DoesNotExist:
             raise NotFound("Категория не найдена")
 
+        # Annotate the products with an average rating
+        queryset = Product.objects.filter(category=category, is_active=True).annotate(
+            average_rating=Avg('product_reviews__rating'),
+            final_price=ExpressionWrapper(
+                F('price') - F('discounted_price'), output_field=DecimalField(max_digits=10, decimal_places=2)
+            )
+        )
+
+        return queryset
+
     def get(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
+        queryset = self.get_queryset()  # Получаем также категорию
         filtered_queryset = self.filter_queryset(queryset)  # Применяем фильтры
 
-        serializer = ProductSerializer(filtered_queryset, many=True, context={'request': request}).data
+        category = Category.objects.get(slug=self.kwargs['slug'])
+        serializer = CategoryProductSerializer(category, context={'request': request})
+        serializer_data = serializer.data
+        serializer_data['products'] = ProductSerializer(filtered_queryset, many=True, context={'request': request}).data
 
-        return Response(serializer)
+        return Response(serializer_data)
 
 
 # class SetListView(generics.ListAPIView):
