@@ -54,7 +54,7 @@ UNFOLD = {
     # "ENVIRONMENT": "sample_app.environment_callback",
     # "DASHBOARD_CALLBACK": "sample_app.dashboard_callback",
     "LOGIN": {
-        "image": lambda request: config_instance.site_meta_image,
+        # "image": lambda request: config_instance.site_meta_image,
         "redirect_after": lambda request: reverse_lazy("admin:authentication_user_changelist"),
     },
     # "STYLES": [
