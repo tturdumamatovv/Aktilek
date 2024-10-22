@@ -175,6 +175,11 @@ UNFOLD = {
                         "icon": "wc",
                         "link": reverse_lazy("admin:product_gender_changelist"),
                     },
+                    {
+                        "title": _("Размерная Сетка"),
+                        "icon": "straighten",
+                        "link": reverse_lazy("admin:product_gender_changelist"),
+                    },
                 ],
             },
             {

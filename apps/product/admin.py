@@ -19,7 +19,7 @@ from .models import (
     Color,
     ProductImage,
     Country,
-    Gender
+    Gender, SizeChart
 )
 from .forms import ProductSizeForm, ProductAdminForm, CharacteristicInlineForm, CategoryAdminForm, ColorAdminForm, \
     TagAdminForm
@@ -126,6 +126,13 @@ class ProductAdmin(ModelAdmin, SortableAdminMixin, TabbedTranslationAdmin):
 @admin.register(Topping)
 class ToppingAdmin(ExcludeBaseFieldsMixin, TranslationAdmin):
     list_display = ('name', 'price')
+    search_fields = ('name',)
+    exclude_base_fields = ('name',)
+
+
+@admin.register(SizeChart)
+class SizeChartAdmin(ExcludeBaseFieldsMixin):
+    list_display = ('name', 'image')
     search_fields = ('name',)
     exclude_base_fields = ('name',)
 
