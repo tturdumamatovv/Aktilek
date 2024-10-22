@@ -6,7 +6,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()  # Ensure Django is fully setup before importing channels and apps
 
 from apps.orders.routing import ws_urlpatterns
-from apps.support_admin_chat.routing import websocket_urlpatterns
+# from apps.support_admin_chat.routing import websocket_urlpatterns
 
 from django.core.asgi import get_asgi_application
 from channels.auth import AuthMiddlewareStack
@@ -20,7 +20,7 @@ application = ProtocolTypeRouter({
         SimpleCorsMiddleware(  # Use your custom middleware here
             AuthMiddlewareStack(
                 URLRouter(
-                    ws_urlpatterns + websocket_urlpatterns,
+                    ws_urlpatterns ,
                 )
             )
         )
