@@ -158,7 +158,7 @@ class CreateOrderView(generics.CreateAPIView):
             # Parse XML response
             try:
                 root = ET.fromstring(response.text)
-                payment_url = root.find('pg_redirect_url').text  # Extract payment URL
+                payment_url = root.find('pg_redirect_url')  # Extract payment URL
 
                 if payment_url is None:
                     raise ValueError("Payment URL is missing in the response.")
