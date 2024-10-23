@@ -95,31 +95,34 @@ class CreateOrderView(generics.CreateAPIView):
                 request.user.bonus -= total_bonus_amount
                 request.user.save()
 
+            # Формируем ответ на заказ
+            order_serializer = OrderSerializer(order, context={'request': request})
+
+            response_data = {
+                "message": "Заказ успешно создан.",
+                "order": order_serializer.data
+            }
+
             # Убедитесь, что тип оплаты - карта
             payment_method = request.data.get('payment_method', 'cash')
             if payment_method == 'card':
                 email = request.user.email
-                phone_number = request.user.phone_number  # Ensure this field exists
+                phone_number = request.user.phone_number  # Убедитесь, что номер телефона существует
                 payment_url = self.create_freedompay_payment(order, email, phone_number)
 
                 if isinstance(payment_url, Response):
                     # Вернем ошибку, если произошел сбой при инициализации платежа
                     return payment_url
 
-                return Response({
-                    "message": "Заказ успешно создан. Перенаправление на страницу оплаты.",
-                    "redirect_url": payment_url
-                }, status=status.HTTP_201_CREATED)
+                # Добавляем redirect_url в ответ
+                response_data["redirect_url"] = payment_url
 
             # Отправляем подтверждение по email, если указано
             email = request.user.email
             if email:
-                self.send_order_confirmation_email(email, OrderSerializer(order, context={'request': request}).data)
+                self.send_order_confirmation_email(email, order_serializer.data)
 
-            return Response({
-                "message": "Заказ успешно создан.",
-                "order": OrderSerializer(order, context={'request': request}).data
-            }, status=status.HTTP_201_CREATED)
+            return Response(response_data, status=status.HTTP_201_CREATED)
 
         return Response({"error": "Требуется аутентификация для создания заказа."}, status=status.HTTP_401_UNAUTHORIZED)
 
