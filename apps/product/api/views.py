@@ -106,7 +106,7 @@ class ProductListByCategorySlugView(generics.ListAPIView):
         except Category.DoesNotExist:
             raise NotFound("Категория не найдена")
 
-        # Собираем все подкатегории, включая основную категорию
+        # Получаем все подкатегории, включая основную категорию
         all_categories = list(category.subcategories.all()) + [category]
 
         # Получаем все продукты из основной категории и подкатегорий
@@ -117,16 +117,29 @@ class ProductListByCategorySlugView(generics.ListAPIView):
             )
         )
 
+        # Применяем сортировку
         return queryset
 
     def get(self, request, *args, **kwargs):
-        queryset = self.get_queryset()  # Получаем также категорию
-        filtered_queryset = self.filter_queryset(queryset)  # Применяем фильтры
+        # Получаем отфильтрованные продукты, включая подкатегории
+        queryset = self.get_queryset()
+        filtered_queryset = self.filter_queryset(queryset)  # Применяем фильтры и сортировку
 
+        # Получаем категорию, чтобы вернуть вложенную структуру
         category = Category.objects.get(slug=self.kwargs['slug'])
         serializer = CategoryProductSerializer(category, context={'request': request})
         serializer_data = serializer.data
-        serializer_data['products'] = ProductSerializer(filtered_queryset, many=True, context={'request': request}).data
+
+        # Фильтруем продукты только для родительской категории (чтобы отразить структуру)
+        products_in_category = filtered_queryset.filter(category=category)
+        serializer_data['products'] = ProductSerializer(products_in_category, many=True,
+                                                        context={'request': request}).data
+
+        # Обновляем продукты подкатегорий, сохраняя исходную структуру
+        for subcategory in serializer_data['subcategories']:
+            subcategory_products = filtered_queryset.filter(category__slug=subcategory['slug'])
+            subcategory['products'] = ProductSerializer(subcategory_products, many=True,
+                                                        context={'request': request}).data
 
         return Response(serializer_data)
 
