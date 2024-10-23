@@ -155,19 +155,22 @@ class CreateOrderView(generics.CreateAPIView):
             # Log the response for debugging
             print("Response from payment gateway:", response.text)
 
-            # Parse XML response
-            try:
-                root = ET.fromstring(response.text)
-                payment_url = root.find('pg_redirect_url')  # Extract payment URL
+            # Join response text if it's split into multiple parts
+            response_text = ''.join(response.text)  # Concatenate if it's broken into parts
 
-                if payment_url is None:
-                    raise ValueError("Payment URL is missing in the response.")
+            # Parse the XML response
+            root = ET.fromstring(response_text)
+            payment_url = root.find('pg_redirect_url')
 
-                return response  # Return the valid response
+            if payment_url is None or not payment_url.text:
+                raise ValueError("Payment URL is missing in the response.")
 
-            except ET.ParseError:
-                return Response({"error": "Failed to parse payment gateway response."},
-                                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            # Return the payment URL as a clean string
+            return payment_url.text
+
+        except ET.ParseError:
+            return Response({"error": "Failed to parse payment gateway response."},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         except requests.RequestException as e:
             print(f"Error during request to Paybox: {e}")
