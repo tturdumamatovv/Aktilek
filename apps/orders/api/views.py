@@ -83,6 +83,8 @@ class CreateOrderView(generics.CreateAPIView):
                 if product_size.quantity >= item.quantity:
                     product_size.quantity -= item.quantity
                     product_size.save()
+                    item.is_ordered = True
+                    item.save()
                 else:
                     return Response({"error": "Недостаточно товара на складе."}, status=status.HTTP_400_BAD_REQUEST)
 

@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.db.models import Min, Max, Avg, F
 
+from apps.orders.models import OrderItem
 from apps.product.models import (
     Product,
     ProductSize,
@@ -260,7 +261,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     characteristics = CharacteristicSerializer(many=True, read_only=True, source='product_characteristics')
     gender = GenderSerializer(read_only=True)
     country = CountrySerializer(read_only=True)
-    is_ordered = serializers.BooleanField(read_only=True)
+    is_ordered = serializers.SerializerMethodField()
     is_active = serializers.BooleanField()
     images = ProductImageSerializer(many=True, read_only=True)
     similar_products = serializers.SerializerMethodField()
@@ -311,6 +312,13 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         # Получаем не более 10 случайных похожих товаров
         similar_products = obj.similar_products.order_by('?')[:10]
         return ProductSimpleSerializer(similar_products, many=True, context=self.context).data
+
+    def get_is_ordered(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            # Check if the current user has an order item for this product
+            return OrderItem.objects.filter(product_size__product=obj, order__user=request.user, is_ordered=True).exists()
+        return False
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)

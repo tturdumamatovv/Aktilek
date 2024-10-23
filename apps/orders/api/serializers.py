@@ -51,6 +51,7 @@ class ProductOrderItemSerializer(serializers.ModelSerializer):
         product_size = ProductSize.objects.get(id=validated_data['product_size_id'])
         validated_data['color_name'] = product_size.color.name
         validated_data['size_name'] = product_size.size.name
+        validated_data['is_ordered'] = True
 
         return super().create(validated_data)
 

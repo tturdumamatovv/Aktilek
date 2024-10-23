@@ -136,6 +136,7 @@ class OrderItem(models.Model):
     quantity = models.PositiveIntegerField(verbose_name=_('Количество'))
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name=_('Общая сумма'))
     is_bonus = models.BooleanField(default=False, verbose_name=_('Бонусный продукт'))
+    is_ordered = models.BooleanField(default=False, verbose_name='Заказан')
 
     class Meta:
         verbose_name = _("Элемент заказа")
