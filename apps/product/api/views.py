@@ -101,12 +101,16 @@ class ProductListByCategorySlugView(generics.ListAPIView):
     def get_queryset(self):
         slug = self.kwargs['slug']
         try:
+            # Получаем категорию по slug
             category = Category.objects.get(slug=slug)
         except Category.DoesNotExist:
             raise NotFound("Категория не найдена")
 
-        # Annotate the products with an average rating
-        queryset = Product.objects.filter(category=category, is_active=True).annotate(
+        # Собираем все подкатегории, включая основную категорию
+        all_categories = list(category.subcategories.all()) + [category]
+
+        # Получаем все продукты из основной категории и подкатегорий
+        queryset = Product.objects.filter(category__in=all_categories, is_active=True).annotate(
             average_rating=Avg('product_reviews__rating'),
             final_price=ExpressionWrapper(
                 F('price') - F('discounted_price'), output_field=DecimalField(max_digits=10, decimal_places=2)
