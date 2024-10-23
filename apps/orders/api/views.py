@@ -99,20 +99,17 @@ class CreateOrderView(generics.CreateAPIView):
             payment_method = request.data.get('payment_method', 'cash')
             if payment_method == 'card':
                 email = request.user.email
-                phone_number = request.user.phone_number  # Если есть телефонный номер в профиле пользователя
-                payment_response = self.create_freedompay_payment(order, email, phone_number)
+                phone_number = request.user.phone_number  # Ensure this field exists
+                payment_url = self.create_freedompay_payment(order, email, phone_number)
 
-                if isinstance(payment_response, Response):
+                if isinstance(payment_url, Response):
                     # Вернем ошибку, если произошел сбой при инициализации платежа
-                    return payment_response
+                    return payment_url
 
-                # Извлечение URL для редиректа
-                payment_url = payment_response.find('pg_redirect_url').text
-                if payment_url:
-                    return Response({
-                        "message": "Заказ успешно создан. Перенаправление на страницу оплаты.",
-                        "redirect_url": payment_url
-                    }, status=status.HTTP_201_CREATED)
+                return Response({
+                    "message": "Заказ успешно создан. Перенаправление на страницу оплаты.",
+                    "redirect_url": payment_url
+                }, status=status.HTTP_201_CREATED)
 
             # Отправляем подтверждение по email, если указано
             email = request.user.email
