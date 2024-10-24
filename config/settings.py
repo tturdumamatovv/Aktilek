@@ -187,7 +187,8 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
-    'DEFAULT_PAGINATION_CLASS': 'apps.services.pagination.CustomPagination'
+    'DEFAULT_PAGINATION_CLASS': 'apps.services.pagination.CustomPagination',
+    'EXCEPTION_HANDLER': 'apps.services.exception.custom_exception_handler',
 }
 
 SIMPLE_JWT = {
