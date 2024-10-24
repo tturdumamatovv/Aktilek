@@ -37,7 +37,11 @@ class ProductSearchView(generics.ListAPIView):
     filterset_class = ProductFilter
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = Product.objects.filter(
+            is_active=True,
+            product_sizes__isnull=False,  # Убедимся, что у продукта есть хотя бы один product_size
+            product_sizes__quantity__gt=0  # Проверим, что хотя бы один product_size имеет количество больше 0
+        ).distinct()  # distinct() для исключения дубликатов
         return queryset
 
 
