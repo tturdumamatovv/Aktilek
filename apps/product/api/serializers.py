@@ -533,7 +533,8 @@ class ProductShortSerializer(serializers.ModelSerializer):
 class ReviewCreateSerializer(serializers.ModelSerializer):
     images = ReviewImageSerializer(many=True, required=False)  # Поле для изображений
     created_at = serializers.SerializerMethodField()
-    product = ProductShortSerializer(read_only=True)
+    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all())
+    # product = ProductShortSerializer(read_only=True)
 
     class Meta:
         model = Review

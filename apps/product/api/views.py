@@ -2,6 +2,8 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, status, permissions
 from rest_framework.exceptions import NotFound
 from django.db.models import Avg, F, ExpressionWrapper, DecimalField
+from django.shortcuts import get_object_or_404
+
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.filters import OrderingFilter
@@ -267,7 +269,9 @@ class CreateReviewView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        product_id = self.request.data.get('product')
+        product = get_object_or_404(Product, id=product_id)  # Get the product instance
+        serializer.save(user=self.request.user, product=product)
 
 
 class ReviewDeleteView(generics.DestroyAPIView):
