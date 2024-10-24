@@ -547,15 +547,16 @@ class ReviewCreateSerializer(serializers.ModelSerializer):
         # Проверка, чтобы пользователь мог оставить до 5 отзывов для одного продукта
         reviews_count = Review.objects.filter(user=user, product=data['product']).count()
         if reviews_count >= 5:
-            raise serializers.ValidationError({"error": "Вы можете оставить не более 5 отзывов на этот продукт."})
+            raise serializers.ValidationError("Вы можете оставить не более 5 отзывов на этот продукт.", code="error")
 
         # Проверка диапазона рейтинга
         rating = data.get('rating')
         if rating is not None:
             if rating < 0.0 or rating > 5.0:
-                raise serializers.ValidationError({"error": "Рейтинг должен быть в диапазоне от 0 до 5."})
+                raise serializers.ValidationError("Рейтинг должен быть в диапазоне от 0 до 5.", code="error")
             if not isinstance(rating, float):
-                raise serializers.ValidationError({"error": "Рейтинг должен быть числом (можно с плавающей запятой)."})
+                raise serializers.ValidationError("Рейтинг должен быть числом (можно с плавающей запятой).",
+                                                  code="error")
 
         return data
 
