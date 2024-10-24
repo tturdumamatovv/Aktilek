@@ -140,9 +140,9 @@ class CreateOrderView(generics.CreateAPIView):
             'pg_description': f"Оплата заказа #{order_id}",
             'pg_user_phone': phone_number,
             'pg_user_contact_email': email,
-            'pg_result_url': 'http://localhost:8000/payment/result',
-            'pg_success_url': 'http://localhost:8000/payment/success',
-            'pg_failure_url': 'http://localhost:8000/payment/failure',
+            'pg_result_url': 'https://ak-tilek.kg/ru/',
+            'pg_success_url': 'https://ak-tilek.kg/ru/',
+            'pg_failure_url': 'https://ak-tilek.kg/ru/',
             'pg_testing_mode': 1,
             'pg_salt': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         }
