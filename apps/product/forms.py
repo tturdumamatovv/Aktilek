@@ -8,7 +8,7 @@ from django.utils.translation import gettext_lazy as _
 class ProductSizeForm(forms.ModelForm):
     class Meta:
         model = ProductSize
-        fields = ['product', 'size', 'color', 'quantity']
+        fields = ['product', 'size', 'color', 'quantity', 'price', 'discounted_price', 'bonus_price']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

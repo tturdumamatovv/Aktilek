@@ -221,6 +221,10 @@ class ProductSize(models.Model):
     color = models.ForeignKey(Color, on_delete=models.CASCADE, related_name='product_colors', verbose_name=_('Цвета'))
     size = models.ForeignKey(Size, related_name='product_sizes', verbose_name=_('Размеры'), on_delete=models.CASCADE)
     quantity = models.IntegerField(default=0, verbose_name=_('Количество'))
+    price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name=_('Цена'), blank=True, null=True)
+    discounted_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name=_('Цена со скидкой'),
+                                           blank=True, null=True)
+    bonus_price = models.DecimalField(default=0, max_digits=10, decimal_places=2, verbose_name=_('Цена бонусами'), blank=True, null=True)
 
     class Meta:
         verbose_name = "Вариант продукта"
@@ -228,6 +232,18 @@ class ProductSize(models.Model):
 
     def __str__(self):
         return f"{self.product.name}"
+
+    def save(self, *args, **kwargs):
+        # Проверяем, если цена не указана, берем из продукта
+        if self.price is None:
+            self.price = self.product.price
+        if self.discounted_price is None:
+            self.discounted_price = self.product.discounted_price
+        if self.bonus_price is None:
+            self.bonus_price = self.product.bonus_price
+
+        # Вызов родительского метода save
+        super().save(*args, **kwargs)
 
 
 class Country(models.Model):

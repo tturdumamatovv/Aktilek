@@ -80,11 +80,20 @@ class ProductSizeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProductSize
-        fields = ['id', 'color_id', 'color_name', 'color_hex_code', 'images', 'size', 'quantity']  # Добавляем поле images
+        fields = ['id', 'color_id', 'color_name', 'color_hex_code', 'images', 'size',
+                  'quantity', 'price', 'discounted_price', 'bonus_price']  # Добавляем поле images
 
     def get_images(self, obj):
         # Теперь изображения получаются напрямую от ProductSize
         return ProductImageSerializer(obj.color_images.all(), many=True, context=self.context).data
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['price'] = float(representation['price']) if representation['price'] else None
+        representation['discounted_price'] = float(representation['discounted_price']) if representation[
+            'discounted_price'] else None
+        representation['bonus_price'] = float(representation['bonus_price']) if representation['bonus_price'] else None
+        return representation
 
 
 class ReviewSerializer(serializers.ModelSerializer):

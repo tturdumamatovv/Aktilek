@@ -77,7 +77,9 @@ class CreateOrderView(generics.CreateAPIView):
                 order.user_address = user_address
                 order.save()
 
-            # Уменьшаем количество продуктов на складе
+            # Уменьшаем количество продуктов на складе и рассчитываем стоимость заказа
+            total_order_amount = 0
+            total_bonus_amount = 0  # Инициализируем сумму бонусов
             for item in order.order_items.all():
                 product_size = item.product_size
                 if product_size.quantity >= item.quantity:
@@ -85,17 +87,34 @@ class CreateOrderView(generics.CreateAPIView):
                     product_size.save()
                     item.is_ordered = True
                     item.save()
+
+                    # Рассчитываем цену на основе скидок и бонусов
+                    if item.is_bonus and product_size.bonus_price is not None:
+                        item_price = product_size.bonus_price
+                        total_bonus_amount += item_price * item.quantity
+                    elif product_size.discounted_price is not None:
+                        item_price = product_size.discounted_price
+                    else:
+                        item_price = product_size.price
+
+                    # Добавляем стоимость каждого товара в итоговую сумму заказа
+                    total_order_amount += item_price * item.quantity
+
                 else:
-                    return Response({"error": "Недостаточно товара на складе."}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"error": f"Недостаточно товара на складе для {item.product_size.product.name}."},
+                                    status=status.HTTP_400_BAD_REQUEST)
 
             # Обрабатываем оплату бонусами
-            total_bonus_amount = sum(item.total_amount for item in order.order_items.all() if item.is_bonus)
             if total_bonus_amount > 0:
                 if request.user.bonus is None or request.user.bonus < total_bonus_amount:
                     return Response({"error": "Недостаточно бонусов для оплаты."}, status=status.HTTP_400_BAD_REQUEST)
 
                 request.user.bonus -= total_bonus_amount
                 request.user.save()
+
+            # Обновляем итоговую сумму заказа
+            order.total_amount = total_order_amount
+            order.save()
 
             # Формируем ответ на заказ
             order_serializer = OrderSerializer(order, context={'request': request})
