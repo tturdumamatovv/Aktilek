@@ -586,3 +586,7 @@ class ReviewsGetSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
         fields = ['id', 'rating', 'comment', 'product', 'images', 'created_at']
+
+    def get_created_at(self, obj):
+        # Форматируем дату в виде день.месяц.год
+        return obj.created_at.strftime('%d.%m.%Y')
