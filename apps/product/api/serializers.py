@@ -576,3 +576,13 @@ class ReviewCreateSerializer(serializers.ModelSerializer):
             ReviewImage.objects.create(review=review, image=image)  # Сохраняем каждое изображение
 
         return review
+
+
+class ReviewsGetSerializer(serializers.ModelSerializer):
+    images = ReviewImageSerializer(many=True, required=False)  # Поле для изображений
+    created_at = serializers.SerializerMethodField()
+    product = ProductShortSerializer(read_only=True)
+
+    class Meta:
+        model = Review
+        fields = ['id', 'rating', 'comment', 'product', 'images', 'created_at']
