@@ -5,6 +5,7 @@ from rest_framework.generics import ListAPIView, CreateAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.orders.models import Warehouse
 from apps.product.models import Category
 from apps.pages.models import (
     Banner,
@@ -106,6 +107,13 @@ class StaticPageDetailView(generics.RetrieveAPIView):
 class MethodsOfPaymentView(generics.ListAPIView):
     queryset = MethodsOfPayment.objects.all()
     serializer_class = MethodOfPaymentSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        # Добавим все склады в виде поля к каждому методу оплаты
+        for method in queryset:
+            method.warehouses = Warehouse.objects.all()  # Загружаем все склады
+        return queryset
 
 
 class LayOutView(generics.ListAPIView):

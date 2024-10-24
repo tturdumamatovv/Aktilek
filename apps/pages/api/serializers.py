@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from apps.product.models import Category
-from apps.orders.models import PercentCashback
+from apps.orders.models import PercentCashback, Warehouse
 from apps.pages.models import (
     Banner,
     OrderTypes,
@@ -29,10 +29,17 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = ['slug', 'name', 'description', 'image']
 
 
+class WarehouseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Warehouse
+        fields = ['city', 'apartment_number', 'entrance', 'floor', 'intercom']
+
+
 class MethodOfPaymentSerializer(serializers.ModelSerializer):
+    warehouses = WarehouseSerializer(many=True)
     class Meta:
         model = MethodsOfPayment
-        fields = ['title', 'description', 'online_payment']
+        fields = ['title', 'description', 'online_payment', 'warehouses']
 
 
 class BannerSerializer(serializers.ModelSerializer):
