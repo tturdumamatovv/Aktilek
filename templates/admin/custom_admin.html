@@ -375,12 +375,12 @@ function fetchOrderDetails(orderId) {
       if (data.warehouse_info && data.warehouse_info.city) {
         orderDetailsContent += `
           <h4>Информация о складе:</h4>
-          <p><strong>Город:</strong> ${data.warehouse_info.city}</p>
+          <p><strong>Адрес:</strong> ${data.warehouse_info.city}</p>
         `;
       } else {
         orderDetailsContent += `
           <h4>Информация о складе:</h4>
-          <p><strong>Город:</strong> Информация не указана</p>
+          <p><strong>Адрес:</strong> Информация не указана</p>
         `;
       }
 
