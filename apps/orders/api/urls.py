@@ -5,7 +5,8 @@ from .views import (
     ReportCreateView,
     ListOrderView,
     PromoCodeDetailView,
-    CreateReOrderView
+    CreateReOrderView,
+    get_user_orders
 )
 
 urlpatterns = [
@@ -15,5 +16,5 @@ urlpatterns = [
     path('reports/', ReportCreateView.as_view(), name='create-report'),
     path('promocode/<str:code>/', PromoCodeDetailView.as_view(), name='promocode-detail'),
     path('reorder/<int:order_id>/', CreateReOrderView.as_view(), name='reorder'),
-
+    path('user/orders/', get_user_orders, name='user_orders')
 ]

@@ -1,17 +1,17 @@
-from decimal import Decimal
-
 import requests
 
 import xml.etree.ElementTree as ET
 from datetime import datetime
 from decouple import config
 
+from django.http import JsonResponse
 from django.core.mail import send_mail
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
+from django.utils.timezone import localtime
 
-from rest_framework import generics, status
+from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -46,6 +46,18 @@ class ListOrderView(generics.ListAPIView):
             'request': self.request
         })
         return context
+
+
+def get_user_orders(request):
+    user_id = request.GET.get('user_id')
+    orders = Order.objects.filter(user_id=user_id).values(
+        'id', 'order_time', 'total_amount', 'order_status'
+    ).order_by('-id')
+    for order in orders:
+        order['order_time'] = localtime(order['order_time']).strftime('%d/%m/%Y, %H:%M')
+        order['order_status'] = dict(Order._meta.get_field('order_status').choices)[order['order_status']]
+
+    return JsonResponse({'orders': list(orders)}, safe=False)
 
 
 class CreateOrderView(generics.CreateAPIView):

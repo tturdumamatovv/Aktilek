@@ -37,7 +37,7 @@
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                   <span style="font-size: 13px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                    +{{ user.phone_number }}
+                    {{ user.phone_number }}
                   </span>
                   <div style="width: 8px; height: 8px; background-color: #22c55e; border-radius: 50%;"></div>
                 </div>
@@ -133,7 +133,9 @@
       </div>
 
       <div id="orders-content" class="tab-content" style="display: none; padding: 20px;">
-        <!-- Orders will be loaded here -->
+        <div id="user-orders">
+
+        </div>
       </div>
     </div>
   </div>
@@ -277,6 +279,7 @@
         this.style.backgroundColor = '#f8fafc';
 
         selectedUserId = Number(this.getAttribute('data-user-id'));
+        loadUserOrders(selectedUserId);
         var userNameOrPhone = this.getAttribute('data-user-name');
         var userNameOrPhone = this.getAttribute('data-user-phone');
 
@@ -305,13 +308,49 @@
         `;
 
         // Update info panel
-        document.getElementById('info-name').textContent = userNameOrPhone;
+        document.getElementById('info-name').textContent = this.getAttribute('data-user-name');
         document.getElementById('info-id').textContent = + this.getAttribute('data-user-id');
         document.getElementById('info-phone').textContent = + this.getAttribute('data-user-phone');
 
         loadMessages(selectedUserId);
       });
     });
+
+         function loadUserOrders(userId) {
+      fetch(`/api/v1/orders/user/orders/?user_id=${userId}`)
+          .then(response => response.json())
+          .then(data => {
+              const ordersContainer = document.getElementById('user-orders');
+              ordersContainer.innerHTML = '';
+
+              if (data.orders && data.orders.length > 0) {
+                  data.orders.forEach(order => {
+                      const orderElement = document.createElement('div');
+                      orderElement.style.marginBottom = '20px';
+                      orderElement.style.padding = '10px';
+                      orderElement.style.border = '1px solid #e2e8f0';
+                      orderElement.style.borderRadius = '8px';
+                      orderElement.style.backgroundColor = '#f8fafc';
+                       orderElement.style.color  = '#000'
+
+                      orderElement.innerHTML = `
+                          <div><strong>Заказ #${order.id}</strong></div>
+                          <div>Время Заказа: ${order.order_time}</div>
+                          <div>Общая сумма: ${order.total_amount}</div>
+                          <div>Статус: ${order.order_status}</div>
+                      `;
+
+                      ordersContainer.appendChild(orderElement);
+                  });
+              } else {
+                  ordersContainer.innerHTML = '<p>No orders found.</p>';
+              }
+          })
+          .catch(error => {
+              console.error('Error loading orders:', error);
+              document.getElementById('user-orders').innerHTML = '<p>Error loading orders. Please try again later.</p>';
+          });
+  }
 
     function loadMessages(userId) {
       fetchChatId(userId).then(function(chatId) {
@@ -535,7 +574,13 @@ function sendMessage(chatId, messageContent, imageUrl) {
     .user-item:hover {
       background-color: #f8fafc !important;
     }
-
+.tab-content{
+display: block;
+    padding: 20px;
+    overflow-y: scroll ;
+    min-height: 450px;
+    max-height: 400px;
+}
     #send-button:hover {
       background-color: #2563eb;
     }
@@ -566,6 +611,23 @@ function sendMessage(chatId, messageContent, imageUrl) {
       max-height: 120px;
       resize: none;
     }
+
+    .status-pending {
+    color: #f59e0b; /* Желтый */
+    }
+    .status-in_progress {
+        color: #3b82f6; /* Синий */
+    }
+    .status-delivery {
+        color: #22c55e; /* Зеленый */
+    }
+    .status-completed {
+        color: #10b981; /* Зеленый темнее */
+    }
+    .status-cancelled {
+        color: #ef4444; /* Красный */
+    }
+
   </style>
 
 {% endblock %}
