@@ -120,14 +120,16 @@ class OrderListSerializer(serializers.ModelSerializer):
     order_time = serializers.SerializerMethodField()
     user_address = serializers.SerializerMethodField()
     app_download_url = serializers.SerializerMethodField()
-    order_status = serializers.SerializerMethodField()  # Добавлено для статуса
+    order_status = serializers.SerializerMethodField()
+    payment_method = serializers.SerializerMethodField()
+    order_source = serializers.SerializerMethodField()
     total_bonus_amount = serializers.SerializerMethodField()
     warehouse_info = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
-        fields = ['id', 'total_amount', 'order_time', 'order_items', 'total_bonus_amount',
-                  'is_pickup', 'user_address', 'app_download_url', 'order_status', 'warehouse_info']
+        fields = ['id', 'total_amount', 'order_time', 'order_items', 'total_bonus_amount', 'payment_method',
+                  'is_pickup', 'user_address', 'app_download_url', 'order_status', 'warehouse_info', 'order_source']
 
     def get_total_amount(self, obj):
         return obj.get_total_amount()
@@ -164,6 +166,20 @@ class OrderListSerializer(serializers.ModelSerializer):
             'cancelled': 'Отменено'
         }
         return status_map.get(obj.order_status, obj.order_status)  # Поле app_download_link было связано с моделью TelegramBotToken, которая была удалена
+
+    def get_payment_method(self, obj):
+        status_map = {
+            'cash': 'Наличкой',
+            'card': 'Картой'
+        }
+        return status_map.get(obj.payment_method, obj.payment_method)
+
+    def get_order_source(self, obj):
+        status_map = {
+            'web': 'Веб Сайт',
+            'mobile': 'Мобильное Приложение'
+        }
+        return status_map.get(obj.order_source, obj.order_source)
 
     def get_total_bonus_amount(self, obj):
         # Если бонусы уже начислены, вернуть их

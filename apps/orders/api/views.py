@@ -1,4 +1,5 @@
 import requests
+import logging
 
 import xml.etree.ElementTree as ET
 from datetime import datetime
@@ -10,10 +11,13 @@ from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.utils.timezone import localtime
+from django.shortcuts import get_object_or_404
 
-from rest_framework import generics, status, permissions
+from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.renderers import JSONRenderer
+
 
 from apps.authentication.models import UserAddress
 from apps.orders.models import Order, PromoCode, Warehouse
@@ -30,6 +34,11 @@ PAYBOX_URL = config('PAYBOX_URL')
 PAYBOX_MERCHANT_ID = config('PAYBOX_MERCHANT_ID')
 PAYBOX_MERCHANT_SECRET = config('PAYBOX_MERCHANT_SECRET')
 PAYBOX_MERCHANT_SECRET_PAYOUT = config('PAYBOX_MERCHANT_SECRET_PAYOUT')
+
+
+
+logger = logging.getLogger(__name__)
+
 
 class ListOrderView(generics.ListAPIView):
     serializer_class = OrderListSerializer
@@ -58,6 +67,24 @@ def get_user_orders(request):
         order['order_status'] = dict(Order._meta.get_field('order_status').choices)[order['order_status']]
 
     return JsonResponse({'orders': list(orders)}, safe=False)
+
+
+def get_order_details(request):
+    order_id = request.GET.get('order_id')
+    try:
+        order = get_object_or_404(Order, id=order_id)
+
+        # Используем сериализатор для преобразования данных заказа
+        serializer = OrderListSerializer(order, context={'request': request})
+
+        # Преобразуем сериализованные данные в JSON
+        order_data = JSONRenderer().render(serializer.data)
+
+        return JsonResponse(serializer.data, safe=False)
+    except Order.DoesNotExist:
+        return JsonResponse({'error': 'Order not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 class CreateOrderView(generics.CreateAPIView):
