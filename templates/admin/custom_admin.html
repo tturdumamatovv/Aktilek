@@ -21,7 +21,7 @@
       <!-- User List -->
       <div style="overflow-y: auto; height: calc(90vh - 100px);">
         {% for user in users %}
-          <div class="user-item" data-user-id="{{ user.id }}" data-user-name="{{ user.full_name|default:user.phone_number }}"
+          <div class="user-item" data-user-id="{{ user.id }}" data-user-phone="{{ user.phone_number }}" data-user-name="{{ user.full_name|default:user.phone_number }}"
                style="padding: 16px; border-bottom: 1px solid #e2e8f0; cursor: pointer; transition: all 0.2s;">
             <div style="display: flex; align-items: center; gap: 12px;">
               <!-- User Avatar -->
@@ -120,6 +120,10 @@
           <div style="margin-bottom: 16px;">
             <div style="font-size: 13px; color: #64748b; margin-bottom: 4px;">Full Name</div>
             <div id="info-name" style="font-size: 15px; color: #1e293b;">-</div>
+          </div>
+          <div style="margin-bottom: 16px;">
+            <div style="font-size: 13px; color: #64748b; margin-bottom: 4px;">ID</div>
+            <div id="info-id" style="font-size: 15px; color: #1e293b;">-</div>
           </div>
           <div style="margin-bottom: 16px;">
             <div style="font-size: 13px; color: #64748b; margin-bottom: 4px;">Phone</div>
@@ -274,6 +278,7 @@
 
         selectedUserId = Number(this.getAttribute('data-user-id'));
         var userNameOrPhone = this.getAttribute('data-user-name');
+        var userNameOrPhone = this.getAttribute('data-user-phone');
 
         // Show customer info button
         document.getElementById('show-customer-info').style.display = 'flex';
@@ -301,43 +306,113 @@
 
         // Update info panel
         document.getElementById('info-name').textContent = userNameOrPhone;
-        document.getElementById('info-phone').textContent = '+' + this.getAttribute('data-user-id');
+        document.getElementById('info-id').textContent = + this.getAttribute('data-user-id');
+        document.getElementById('info-phone').textContent = + this.getAttribute('data-user-phone');
 
         loadMessages(selectedUserId);
       });
     });
 
-    // Message sending
-    document.getElementById('send-button').addEventListener('click', sendMessage);
-    document.getElementById('message-box').addEventListener('keypress', function(e) {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-      }
-    });
+    function loadMessages(userId) {
+      fetchChatId(userId).then(function(chatId) {
+        if (chatId) {
+          selectedChatId = chatId;
+          subscribeToChat(chatId, userId);
+        } else {
+          selectedChatId = null;
+          document.getElementById('chat-box').innerHTML = 'Нет сообщений. Начните новый чат.';
+        }
+      });
+    }
 
-    function sendMessage() {
+    // Message sending
+    document.getElementById('send-button').addEventListener('click', function() {
       var messageContent = document.getElementById('message-box').value;
       var imageFile = document.getElementById('image-upload').files[0];
-
       if (!messageContent && !imageFile) {
-        alert('Please enter a message or select an image.');
+        alert('Введите сообщение или выберите изображение.');
         return;
       }
       if (!selectedUserId) {
-        alert('Please select a user first.');
+        alert('Выберите пользователя.');
         return;
       }
+      sendMessageToExistingChat(selectedChatId, messageContent, imageFile);
+      document.getElementById('message-box').value = "";
+      document.getElementById('image-upload').value = "";
+    });
 
+    function sendMessageToExistingChat(chatId, messageContent, imageFile) {
       if (imageFile) {
-        uploadImageAndSendMessage(selectedChatId, messageContent, imageFile);
+        uploadImageToFirestore(imageFile).then(imageUrl => {
+          sendMessage(chatId, messageContent, imageUrl);
+        }).catch(error => {
+          console.error("Ошибка загрузки изображения:", error);
+        });
       } else {
-        sendMessageToChat(selectedChatId, messageContent, null);
+        sendMessage(chatId, messageContent, null);
       }
+    }
 
-      // Clear inputs
-      document.getElementById('message-box').value = '';
-      document.getElementById('image-upload').value = '';
+function sendMessage(chatId, messageContent, imageUrl) {
+      console.log("Отправка сообщения с данными:", {
+          sender_id: adminId,
+          recipient_id: selectedUserId,
+          content: messageContent,
+          image_url: imageUrl
+      });
+
+      // Приводим adminId и selectedUserId к строкам
+      const senderId = String(adminId);
+      const recipientId = String(selectedUserId);
+      const chatDocId = String(chatId);
+
+      // Проверяем типы данных перед отправкой
+      console.log("Типы данных:");
+      console.log("adminId:", typeof senderId, "значение:", senderId);
+      console.log("selectedUserId:", typeof recipientId, "значение:", recipientId);
+      console.log("chatId:", typeof chatDocId, "значение:", chatDocId);
+
+      db.collection('chats').doc(chatDocId).collection('messages').add({
+          sender_id: senderId,  // Приведение к строке
+          sender_full_name: 'Admin',
+          recipient_id: recipientId,  // Приведение к строке
+          content: messageContent || '',
+          image_url: imageUrl || null,
+          timestamp: new Date()  // Дата в правильном формате
+      }).then(() => {
+          console.log("Сообщение отправлено.");
+      }).catch((error) => {
+          console.error("Ошибка при отправке сообщения:", error);
+      });
+    }
+
+        function uploadImageToFirestore(imageFile) {
+      return new Promise((resolve, reject) => {
+        var storageRef = storage.ref().child('message_images/' + imageFile.name);
+        var uploadTask = storageRef.put(imageFile);
+
+        uploadTask.on('state_changed',
+          function(snapshot) {
+            var progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            console.log('Загрузка изображения: ' + progress + '% завершено');
+          },
+          function(error) {
+            console.error("Ошибка загрузки изображения:", error);
+            reject(error);
+          },
+          function() {
+            // Получаем ссылку на загруженное изображение
+            uploadTask.snapshot.ref.getDownloadURL().then(function(downloadURL) {
+              console.log("Изображение загружено. URL:", downloadURL); // Логируем URL изображения
+              resolve(downloadURL);
+            }).catch(function(error) {
+              console.error("Ошибка при получении URL изображения:", error);
+              reject(error);
+            });
+          }
+        );
+      });
     }
 
     function uploadImageAndSendMessage(chatId, messageContent, imageFile) {
@@ -412,18 +487,24 @@
 
     // Image Modal Functions
     function openImageModal(imageUrl) {
-      document.getElementById('modal-image').src = imageUrl;
-      document.getElementById('image-modal').style.display = 'block';
+      var modal = document.getElementById('image-modal');
+      var modalImage = document.getElementById('modal-image');
+      modalImage.src = imageUrl;
+      modal.style.display = "block";
     }
 
-    document.getElementById('close-modal').addEventListener('click', function() {
-      document.getElementById('image-modal').style.display = 'none';
+    // Закрытие модального окна
+    var closeModal = document.getElementById('close-modal');
+    closeModal.addEventListener('click', function() {
+      var modal = document.getElementById('image-modal');
+      modal.style.display = "none";
     });
 
+    // Закрытие модального окна при клике вне изображения
     window.addEventListener('click', function(event) {
-      const modal = document.getElementById('image-modal');
-      if (event.target === modal) {
-        modal.style.display = 'none';
+      var modal = document.getElementById('image-modal');
+      if (event.target == modal) {
+        modal.style.display = "none";
       }
     });
   </script>
