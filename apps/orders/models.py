@@ -53,6 +53,8 @@ class Order(models.Model):
     comment = models.TextField(verbose_name=_('Комментарий'), blank=True, null=True)
     promo_code = models.ForeignKey('PromoCode', on_delete=models.SET_NULL, null=True, blank=True)
     user_address = models.ForeignKey('authentication.UserAddress', on_delete=models.SET_NULL, null=True, blank=True)
+    warehouse = models.ForeignKey('Warehouse', null=True, blank=True, on_delete=models.SET_NULL, related_name='orders')
+    is_read = models.BooleanField(default=False, verbose_name=_("Прочитано"))
 
     class Meta:
         verbose_name = _("Заказ")
@@ -95,14 +97,23 @@ class Order(models.Model):
 
     def get_total_amount(self):
         total_amount = Decimal(0)
+        # Calculate total amount based on ProductSize prices
         for order_item in self.order_items.all():
-            total_amount += order_item.total_amount
+            product_size = order_item.product_size
+            if order_item.is_bonus and product_size.bonus_price is not None:
+                total_amount += product_size.bonus_price * order_item.quantity
+            elif product_size.discounted_price is not None:
+                total_amount += product_size.discounted_price * order_item.quantity
+            else:
+                total_amount += product_size.price * order_item.quantity
         return total_amount
 
     def get_total_bonus_amount(self):
         total_bonus_amount = self.total_bonus_amount or 0
+        # Calculate total bonus amount based on ProductSize bonus_price
         for order_item in self.order_items.filter(is_bonus=True):
-            total_bonus_amount += order_item.total_amount
+            product_size = order_item.product_size
+            total_bonus_amount += product_size.bonus_price * order_item.quantity
         return total_bonus_amount
 
     def apply_bonuses(self):

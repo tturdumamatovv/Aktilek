@@ -4,6 +4,8 @@ import pytz
 from django.db import transaction
 from django.conf import settings
 from rest_framework import serializers
+
+from apps.authentication.models import UserAddress
 from apps.orders.models import (
     Order,
     OrderItem,
@@ -71,6 +73,14 @@ class ProductOrderItemSerializer(serializers.ModelSerializer):
             'name': product.name,
             'price': product.discounted_price if product.discounted_price else product.price,
             'image': image_url,
+            'product_size': {
+                'size': product_size.size.name,
+                'color': product_size.color.name,
+                'price': product_size.discounted_price if product_size.discounted_price else product_size.price,
+                'bonus_price': product_size.bonus_price,
+                'in_stock': product_in_stock,
+                'quantity': obj.quantity,  # Quantity ordered by the user
+            },
             'product_size_id': product_size.id,
             'in_stock': product_in_stock
         }
@@ -112,11 +122,12 @@ class OrderListSerializer(serializers.ModelSerializer):
     app_download_url = serializers.SerializerMethodField()
     order_status = serializers.SerializerMethodField()  # Добавлено для статуса
     total_bonus_amount = serializers.SerializerMethodField()
+    warehouse_info = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
         fields = ['id', 'total_amount', 'order_time', 'order_items', 'total_bonus_amount',
-                  'is_pickup', 'user_address', 'app_download_url', 'order_status']
+                  'is_pickup', 'user_address', 'app_download_url', 'order_status', 'warehouse_info']
 
     def get_total_amount(self, obj):
         return obj.get_total_amount()
@@ -163,6 +174,20 @@ class OrderListSerializer(serializers.ModelSerializer):
         bonus_points = calculate_bonus_points(obj.total_amount, 0, obj.order_source)
         return bonus_points
 
+    def get_warehouse_info(self, obj):
+        if obj.is_pickup and obj.warehouse:
+            return {
+                "city": obj.warehouse.city,
+                "apartment_number": obj.warehouse.apartment_number,
+                "entrance": obj.warehouse.entrance,
+                "floor": obj.warehouse.floor,
+                "intercom": obj.warehouse.intercom,
+                "latitude": obj.warehouse.latitude,
+                "longitude": obj.warehouse.longitude,
+                "comment": obj.warehouse.comment
+            }
+        return None
+
 
 class OrderSerializer(serializers.ModelSerializer):
     products = ProductOrderItemSerializer(many=True, source='order_items', required=True)
@@ -171,13 +196,15 @@ class OrderSerializer(serializers.ModelSerializer):
     is_pickup = serializers.BooleanField(default=False)
     promo_code = serializers.CharField(required=False, allow_blank=True)
     user_address_id = serializers.IntegerField(required=False, allow_null=True)
+    warehouse_id = serializers.IntegerField(required=False, allow_null=True)
     delivery_info = serializers.SerializerMethodField()
     warehouse_city = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
         fields = [
-            'id', 'order_time', 'total_amount', 'delivery_info', 'is_pickup', 'user_address_id', 'order_status',
+            'id', 'order_time', 'total_amount', 'delivery_info', 'is_pickup', 'user_address_id',
+            'warehouse_id', 'order_status',
             'products', 'payment_method', 'change', 'order_source', 'comment',
             'promo_code', 'warehouse_city',
         ]
@@ -193,15 +220,29 @@ class OrderSerializer(serializers.ModelSerializer):
         return None
 
     def validate(self, data):
-        if not data.get('is_pickup') and self.context['request'].user.is_authenticated:
-            if not data.get('user_address_id'):
-                raise serializers.ValidationError({"user_address_id": "Адрес пользователя обязателен для курьерской доставки."})
+        # Validate warehouse_id for pickup orders
+        if data.get('is_pickup') and not data.get('warehouse_id'):
+            raise serializers.ValidationError({"warehouse_id": "ID склада обязателен для самовывоза."})
+        if not data.get('is_pickup') and self.context['request'].user.is_authenticated and not data.get('user_address_id'):
+            raise serializers.ValidationError({"user_address_id": "Адрес обязателен для курьерской доставки."})
         return data
 
     def create(self, validated_data):
         products_data = validated_data.pop('order_items', [])
         promo_code_data = validated_data.pop('promo_code', None)
-        user_address_id = validated_data.pop('user_address_id', None)  # Адрес для авторизованного
+        warehouse_id = validated_data.pop('warehouse_id', None)
+        if validated_data.get('is_pickup') and warehouse_id:
+            try:
+                warehouse = Warehouse.objects.get(id=warehouse_id)
+                validated_data['warehouse'] = warehouse  # Attach warehouse to the order
+            except Warehouse.DoesNotExist:
+                raise serializers.ValidationError({"warehouse_id": "Некорректный склад."})
+
+        # Handle user_address_id for courier orders
+        user_address_id = validated_data.pop('user_address_id', None)
+        if not validated_data.get('is_pickup') and user_address_id:
+            user_address = UserAddress.objects.get(id=user_address_id, user=self.context['request'].user)
+            validated_data['user_address'] = user_address
 
         with transaction.atomic():
             # Создаем заказ без финальной суммы
@@ -236,19 +277,16 @@ class OrderSerializer(serializers.ModelSerializer):
             order.total_amount = total_amount
             print(f"Order total amount before promo: {order.total_amount}")
 
-            # Применяем промо-код, если он есть
             if promo_code_data:
                 promo_code_instance = PromoCode.objects.filter(code=promo_code_data).first()
                 if not promo_code_instance or not promo_code_instance.is_valid():
                     raise serializers.ValidationError({"promo_code": "Промокод недействителен или его срок истек."})
                 order.promo_code = promo_code_instance
-                order.total_amount = order.apply_promo_code()  # Применяем скидку к общей сумме
+                order.total_amount = order.apply_promo_code()
                 print(f"Order total amount after promo: {order.total_amount}")
 
-            # Сохраняем изменения в заказе
             order.save()
 
-            # Обновляем статус продукта
             for product_data in products_data:
                 product_size = ProductSize.objects.filter(id=product_data['product_size_id']).first()
                 product_size.product.is_ordered = True

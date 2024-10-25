@@ -2,6 +2,7 @@ from urllib.parse import quote
 
 from django.contrib import admin
 from django.utils.html import format_html
+from django.contrib import messages
 from unfold.admin import ModelAdmin, TabularInline
 
 from .models import (
@@ -28,18 +29,19 @@ class OrderItemInline(TabularInline):
 
     display_size_name.short_description = "Название размера"
     display_color_name.short_description = "Название цвета"
+    list_per_page = 10
 
 
 @admin.register(Order)
 class OrderAdmin(ModelAdmin):
     list_display = (
-        'id', 'order_time', 'total_amount', 'link_to_user', 'order_status', 'is_pickup',
+        'order_read_status', 'id', 'order_time', 'total_amount', 'link_to_user', 'order_status', 'is_pickup',
     )
     search_fields = ('user__phone_number',)
-    list_filter = ('order_time', 'order_status', 'is_pickup')
+    list_filter = ('order_time', 'order_status', 'is_pickup', 'is_read')
     list_display_links = ('id',)
     list_editable = ('order_status',)
-    readonly_fields = ('user', 'order_source', 'id',)
+    readonly_fields = ('user', 'order_source', 'id', "is_read",)
     inlines = [OrderItemInline]
 
     def total_amount(self, obj):
@@ -51,6 +53,32 @@ class OrderAdmin(ModelAdmin):
         return format_html('<a href="{}">{}</a>', obj.user.get_admin_url() if obj.user else '', obj.user)
 
     link_to_user.short_description = 'Пользователь'
+    list_per_page = 10
+
+    def order_read_status(self, obj):
+        if obj.is_read:
+            return format_html(
+                '<div style="display: flex; align-items: center; justify-content: center; width: 24px; height: 24px;"><div class="no-animation" /></div>'
+            )
+        else:
+            return format_html(
+                '<div style="display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; position: relative;"><div class="no-animation-red" /> <div class="animate-ping" /></div>'
+            )
+
+    order_read_status.short_description = "👁️"
+
+    def change_view(self, request, object_id, form_url="", extra_context=None):
+        obj = self.get_object(request, object_id)
+        if obj and not obj.is_read:
+            obj.is_read = True
+            obj.save()
+            messages.info(request, "Заказ отмечен как прочитанный.")
+        return super().change_view(
+            request,
+            object_id,
+            form_url,
+            extra_context=extra_context,
+        )
 
 
 @admin.register(PercentCashback)

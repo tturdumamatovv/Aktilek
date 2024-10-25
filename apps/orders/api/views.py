@@ -16,7 +16,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.authentication.models import UserAddress
-from apps.orders.models import Order, PromoCode
+from apps.orders.models import Order, PromoCode, Warehouse
 from .serializers import (
     OrderSerializer,
     OrderPreviewSerializer,
@@ -56,8 +56,20 @@ class CreateOrderView(generics.CreateAPIView):
             # Сохраняем основные данные
             is_pickup = request.data.get('is_pickup', False)
             user_address = None
+            warehouse = None
 
-            if not is_pickup:
+            if is_pickup:
+                warehouse_id = request.data.get('warehouse_id')
+                if not warehouse_id:
+                    return Response({"error": "ID склада обязателен для самовывоза."},
+                                    status=status.HTTP_400_BAD_REQUEST)
+                try:
+                    warehouse = Warehouse.objects.get(id=warehouse_id)
+                except Warehouse.DoesNotExist:
+                    return Response({"error": "Некорректный склад или склад не найден."},
+                                    status=status.HTTP_400_BAD_REQUEST)
+            else:
+                # Handle non-pickup orders requiring a user address
                 user_address_id = request.data.get('user_address_id')
                 if not user_address_id:
                     return Response({"error": "Адрес обязателен для курьерских заказов."},
@@ -68,14 +80,17 @@ class CreateOrderView(generics.CreateAPIView):
                     return Response({"error": "Некорректный адрес или адрес не принадлежит пользователю."},
                                     status=status.HTTP_400_BAD_REQUEST)
 
+            # Create order and process items
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             order = serializer.save(user=request.user)
 
-            # Привязываем адрес к заказу
-            if not is_pickup and user_address:
+            # Attach warehouse or address to the order
+            if is_pickup:
+                order.warehouse = warehouse
+            elif user_address:
                 order.user_address = user_address
-                order.save()
+            order.save()
 
             # Уменьшаем количество продуктов на складе и рассчитываем стоимость заказа
             total_order_amount = 0
