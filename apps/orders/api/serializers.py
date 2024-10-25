@@ -179,6 +179,7 @@ class OrderListSerializer(serializers.ModelSerializer):
             return {
                 "city": obj.warehouse.city,
                 "apartment_number": obj.warehouse.apartment_number,
+                "link": obj.warehouse.link,
                 "entrance": obj.warehouse.entrance,
                 "floor": obj.warehouse.floor,
                 "intercom": obj.warehouse.intercom,

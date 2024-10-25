@@ -103,3 +103,6 @@ class WarehouseAdmin(ModelAdmin):
     list_display = ['city']
     list_filter = ['city']
     search_fields = ['city']
+    exclude = ['apartment_number', 'entrance', 'floor',
+               'intercom', 'latitude', 'is_primary', 'longitude',
+               'comment']

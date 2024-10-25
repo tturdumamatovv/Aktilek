@@ -32,7 +32,7 @@ class CategorySerializer(serializers.ModelSerializer):
 class WarehouseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Warehouse
-        fields = ['id', 'city', 'apartment_number', 'entrance', 'floor', 'intercom']
+        fields = ['id', 'city', 'link', 'apartment_number', 'entrance', 'floor', 'intercom']
 
 
 class MethodOfPaymentSerializer(serializers.ModelSerializer):

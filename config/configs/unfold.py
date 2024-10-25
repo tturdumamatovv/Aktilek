@@ -57,9 +57,9 @@ UNFOLD = {
         # "image": lambda request: config_instance.site_meta_image,
         "redirect_after": lambda request: reverse_lazy("admin:authentication_user_changelist"),
     },
-    # "STYLES": [
-    #     lambda request: static("css/style.css"),
-    # ],
+    "STYLES": [
+        lambda request: static("css/style.css"),
+    ],
     # "SCRIPTS": [
     #     lambda request: static("js/script.js"),
     # ],
