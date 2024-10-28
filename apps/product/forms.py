@@ -91,7 +91,7 @@ class CategoryAdminForm(forms.ModelForm):
             # Проверка на уникальность имени категории для текущего языка
             if cleaned_data.get(name_field):
                 if Category.objects.filter(**{name_field: cleaned_data[name_field]}).exists():
-                    self.add_error(name_field, _("A category with this name already exists."))
+                    self.add_error(name_field, _("Категория с таким названием уже существует."))
 
         return cleaned_data
 
