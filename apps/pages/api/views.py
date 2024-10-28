@@ -138,6 +138,12 @@ class BannersView(ListAPIView):
 class StoriesView(ListAPIView):
     queryset = Stories.objects.filter(is_active=True)
 
+    def get_queryset(self):
+        # Получаем базовый queryset
+        queryset = super().get_queryset()
+        # Фильтруем истории, у которых stories не пустые
+        return queryset.filter(stories__isnull=False).distinct()
+
     def get_serializer(self, *args, **kwargs):
         return StoriesSerializer(*args, **kwargs, context={'request': self.request})
 
