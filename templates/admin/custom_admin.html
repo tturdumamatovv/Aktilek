@@ -1,5 +1,8 @@
 {% extends "admin/base_site.html" %}
 {% block content %}
+{% csrf_token %}
+{% load custom_tags %}
+
   <!-- Main Container -->
   <div style="display: flex; height: 90vh; background-color: #f8fafc; font-family: system-ui, -apple-system, sans-serif;">
     <!-- Left Sidebar - User List -->
@@ -19,33 +22,39 @@
       </div>
 
       <!-- User List -->
-      <div style="overflow-y: auto; height: calc(90vh - 100px);">
-        {% for user in users %}
-          <div class="user-item" data-user-id="{{ user.id }}" data-user-phone="{{ user.phone_number }}" data-user-name="{{ user.full_name|default:user.phone_number }}"
-               style="padding: 16px; border-bottom: 1px solid #e2e8f0; cursor: pointer; transition: all 0.2s;">
-            <div style="display: flex; align-items: center; gap: 12px;">
-              <!-- User Avatar -->
-              <div style="width: 44px; height: 44px; background: linear-gradient(135deg, #3b82f6, #2563eb); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 500; font-size: 16px;">
-                {{ user.full_name|default:user.phone_number|slice:":1"|upper }}
-              </div>
-              <!-- User Info -->
-              <div style="flex: 1; min-width: 0;">
-                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
-                  <span style="font-weight: 500; color: #1e293b; font-size: 14px;">
-                    {{ user.full_name|default:user.phone_number }}
-                  </span>
-                </div>
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <span style="font-size: 13px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                    {{ user.phone_number }}
-                  </span>
-                  <div style="width: 8px; height: 8px; background-color: #22c55e; border-radius: 50%;"></div>
-                </div>
-              </div>
-            </div>
+<div style="overflow-y: auto; height: calc(90vh - 100px);">
+  {% for user in users %}
+    <div class="user-item" data-user-id="{{ user.id }}" data-user-phone="{{ user.phone_number }}" data-user-name="{{ user.full_name|default:user.phone_number }}"
+         style="padding: 16px; border-bottom: 1px solid #e2e8f0; cursor: pointer; transition: all 0.2s;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <!-- User Avatar -->
+        <div style="width: 44px; height: 44px; background: linear-gradient(135deg, #3b82f6, #2563eb); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 500; font-size: 16px;">
+          {{ user.full_name|default:user.phone_number|slice:":1"|upper }}
+        </div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
+            <span style="font-weight: 500; color: #1e293b; font-size: 14px;">
+              {{ user.full_name|default:user.phone_number }}
+            </span>
+            {% if user_new_messages_count|get_item:user.id|default:0 > 0 %}
+            <span class="new-messages-count">
+              {{ user_new_messages_count|get_item:user.id|default:0 }}
+            </span>
+            {% else %}
+              <span class="new-messages-count" style="display: none;">0</span>
+            {% endif %}
           </div>
-        {% endfor %}
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 13px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+              {{ user.phone_number }}
+            </span>
+            <div style="width: 8px; height: 8px; background-color: #22c55e; border-radius: 50%;"></div>
+          </div>
+        </div>
       </div>
+    </div>
+  {% endfor %}
+</div>
     </div>
 
     <!-- Main Chat Area -->
@@ -208,6 +217,45 @@
         });
     }
 
+    function updateNewMessagesCount(userId, count) {
+      const userItem = document.querySelector(`.user-item[data-user-id="${userId}"]`);
+      if (userItem) {
+        const newMessagesCountElement = userItem.querySelector('.new-messages-count');
+        if (newMessagesCountElement) {
+          newMessagesCountElement.textContent = count;
+          newMessagesCountElement.style.display = count > 0 ? 'inline-block' : 'none';
+        }
+      }
+    }
+
+
+     function resetNewMessagesCount(userId) {
+      const userItem = document.querySelector(`.user-item[data-user-id="${userId}"]`);
+      if (userItem) {
+        const newMessagesCountElement = userItem.querySelector('.new-messages-count');
+        if (newMessagesCountElement) {
+          newMessagesCountElement.textContent = 0;  // Сбрасываем текст
+          newMessagesCountElement.style.display = 'none';  // Скрываем элемент
+        }
+      }
+    }
+
+    function markMessagesAsRead(chatId) {
+      db.collection('chats').doc(chatId).collection('messages')
+        .where('recipient_id', '==', adminId)  // Фильтруем сообщения для админа
+        .where('is_read', '==', false)  // Только непрочитанные
+        .get()
+        .then(function(querySnapshot) {
+          querySnapshot.forEach(function(doc) {
+            doc.ref.update({ is_read: true });  // Обновляем статус прочтения
+          });
+        })
+        .catch(function(error) {
+          console.error("Ошибка при обновлении статуса сообщений:", error);
+        });
+    }
+
+
     function subscribeToChat(chatId, userId) {
       if (!chatId) return;
 
@@ -216,13 +264,26 @@
         .orderBy('timestamp')
         .onSnapshot(function(querySnapshot) {
           let messages = [];
+          let newMessagesCount = 0;  // Счетчик новых сообщений
           querySnapshot.forEach(function(doc) {
-            messages.push(doc.data());
+            const messageData = doc.data();
+            messages.push(messageData);
+            if (!messageData.is_read && messageData.sender_id !== adminId) {
+              newMessagesCount++;  // Увеличиваем счетчик для новых сообщений
+            }
           });
+
           if (userId === selectedUserId) {
             document.getElementById('chat-box').innerHTML = '';
             messages.forEach(messageData => displayMessage(messageData));
             document.getElementById('chat-box').scrollTop = document.getElementById('chat-box').scrollHeight;
+
+            // Сбрасываем новые сообщения после открытия чата
+            resetNewMessagesCount(userId);
+            // Обновляем статус прочтения сообщений
+            markMessagesAsRead(chatId);
+          } else {
+            updateNewMessagesCount(userId, newMessagesCount);
           }
         });
     }
@@ -454,17 +515,49 @@ window.addEventListener('click', function(event) {
   }
 });
 
-    function loadMessages(userId) {
-      fetchChatId(userId).then(function(chatId) {
-        if (chatId) {
-          selectedChatId = chatId;
-          subscribeToChat(chatId, userId);
-        } else {
-          selectedChatId = null;
-          document.getElementById('chat-box').innerHTML = 'Нет сообщений. Начните новый чат.';
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
         }
-      });
     }
+    return cookieValue;
+}
+
+
+
+function loadMessages(userId) {
+    fetchChatId(userId).then(function(chatId) {
+        if (chatId) {
+            selectedChatId = chatId;
+            subscribeToChat(chatId, userId);
+
+            // Отправка запроса на сервер для обновления статуса сообщений
+            fetch(`/api/v2/chat/mark-as-read/${chatId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')  // Если используется CSRF-токен
+                }
+            }).then(response => {
+                if (response.ok) {
+                    console.log('Messages marked as read');
+                }
+            });
+        } else {
+            selectedChatId = null;
+            document.getElementById('chat-box').innerHTML = 'Нет сообщений. Начните новый чат.';
+        }
+    });
+}
+
 
     // Message sending
     document.getElementById('send-button').addEventListener('click', function() {
@@ -761,6 +854,16 @@ display: none;
     }
     .status-cancelled {
         color: #ef4444; /* Красный */
+    }
+    .new-messages-count {
+      background-color: #ef4444;  /* Красный фон */
+      color: white;                /* Цвет текста */
+      border-radius: 12px;        /* Закругление углов */
+      padding: 4px 8px;           /* Отступы для лучшего восприятия */
+      font-size: 12px;            /* Размер шрифта */
+      display: inline-block;       /* Убедитесь, что элемент отображается как блочный */
+      min-width: 20px;            /* Минимальная ширина, чтобы текст не сжимался */
+      text-align: center;          /* Центрирование текста */
     }
 
   </style>

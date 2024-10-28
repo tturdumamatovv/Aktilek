@@ -64,7 +64,7 @@ THIRD_PARTY_APPS = [
     'channels',
     'ckeditor',
     'mptt',
-    'nested_admin'
+    'nested_admin',
 ]
 
 INSTALLED_APPS = [*DJANGO_APPS, *THIRD_PARTY_APPS, *PROJECT_APPS]
