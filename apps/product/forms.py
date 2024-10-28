@@ -76,17 +76,22 @@ class CharacteristicInlineForm(forms.ModelForm):
 class CategoryAdminForm(forms.ModelForm):
     class Meta:
         model = Category
-        fields = '__all__'  # Include all fields or specify which ones you want
+        fields = '__all__'  # Включить все поля или указать, какие именно нужны
 
     def clean(self):
         cleaned_data = super().clean()
-        languages = ['ru', 'en', 'ky']  # Add your language codes here
+        languages = ['ru', 'en', 'ky']  # Добавьте ваши коды языков здесь
 
         for lang in languages:
             name_field = f'name_{lang}'
 
             if not cleaned_data.get(name_field):
                 self.add_error(name_field, _("This field is required."))
+
+            # Проверка на уникальность имени категории для текущего языка
+            if cleaned_data.get(name_field):
+                if Category.objects.filter(**{name_field: cleaned_data[name_field]}).exists():
+                    self.add_error(name_field, _("A category with this name already exists."))
 
         return cleaned_data
 
