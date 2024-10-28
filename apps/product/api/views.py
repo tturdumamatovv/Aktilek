@@ -31,17 +31,25 @@ from apps.product.models import (
 
 
 class ProductSearchView(generics.ListAPIView):
-    queryset = Product.objects.filter(is_active=True)
     serializer_class = ProductSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_class = ProductFilter
 
     def get_queryset(self):
-        queryset = Product.objects.filter(
-            is_active=True,
+        # Получаем базовый queryset только активных продуктов
+        queryset = Product.objects.filter(is_active=True)
+
+        # Убедимся, что у продукта есть хотя бы один product_size с количеством больше 0
+        queryset = queryset.filter(
             product_sizes__isnull=False,  # Убедимся, что у продукта есть хотя бы один product_size
             product_sizes__quantity__gt=0  # Проверим, что хотя бы один product_size имеет количество больше 0
         ).distinct()  # distinct() для исключения дубликатов
+
+        # Фильтруем по имени, если оно передано в запросе
+        name = self.request.query_params.get('name')
+        if name:
+            queryset = queryset.filter(name__icontains=name)  # Фильтруем по имени
+
         return queryset
 
 
