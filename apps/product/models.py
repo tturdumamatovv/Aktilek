@@ -73,10 +73,13 @@ class Category(MPTTModel):
         """Проверяет, есть ли у категории подкатегории."""
         return self.subcategories.exists()
 
+    def clean(self):
+        if Category.objects.filter(name__iexact=self.name).exclude(id=self.id).exists():
+            raise ValidationError({'name': _('Категория с таким названием уже существует.')})
+
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(unidecode(self.name))
-        self.name = self.name.lower()
         super().save(*args, **kwargs)
 
 

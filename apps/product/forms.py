@@ -84,13 +84,9 @@ class CategoryAdminForm(forms.ModelForm):
 
         for lang in languages:
             name_field = f'name_{lang}'
-            description_field = f'description_{lang}'
 
             if not cleaned_data.get(name_field):
                 self.add_error(name_field, _("This field is required."))
-
-            if not cleaned_data.get(description_field):
-                self.add_error(description_field, _("This field is required."))
 
         return cleaned_data
 
