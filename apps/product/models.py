@@ -77,6 +77,10 @@ class Category(MPTTModel):
         if Category.objects.filter(name__iexact=self.name).exclude(id=self.id).exists():
             raise ValidationError({'name': _('Категория с таким названием уже существует.')})
 
+        # Проверяем наличие продуктов в категории
+        if self.pk and self.products.exists():
+            raise ValidationError(_('Нельзя создавать подкатегории для категории, которая содержит продукты.'))
+
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(unidecode(self.name))
