@@ -27,8 +27,9 @@ class ProductAdminForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Фильтруем категории, чтобы показывать только конечные (у которых нет подкатегорий)
-        self.fields['category'].queryset = Category.objects.filter(subcategories__isnull=True)
+        # Убираем фильтрацию категорий, чтобы отображать все доступные категории
+        self.fields['category'].queryset = Category.objects.all()
+
         if self.instance and self.instance.pk:
             # Исключаем текущий продукт из списка выбора похожих продуктов
             self.fields['similar_products'].queryset = Product.objects.exclude(pk=self.instance.pk)
@@ -49,7 +50,6 @@ class ProductAdminForm(forms.ModelForm):
                 self.add_error(description_field, _("This field is required."))
 
         return cleaned_data
-
 
 class CharacteristicInlineForm(forms.ModelForm):
     class Meta:
