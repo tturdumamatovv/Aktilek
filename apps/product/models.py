@@ -86,6 +86,7 @@ class Category(MPTTModel):
         super().save(*args, **kwargs)
 
 
+
 class Product(models.Model):
     is_active = models.BooleanField(default=True, verbose_name=_('Активный'))
     is_popular = models.BooleanField(default=False, verbose_name=_('Популярный'))
