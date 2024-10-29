@@ -9,7 +9,8 @@ from django.core.files.base import ContentFile
 from django.db import models
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
-from django.core.exceptions import ValidationError
+from django.db.models import UniqueConstraint
+from django.db.models.functions import Lower
 
 from unidecode import unidecode
 
@@ -62,6 +63,12 @@ class Category(MPTTModel):
         verbose_name = "Категория"
         verbose_name_plural = "Категории"
         ordering = ['order']
+        constraints = [
+            UniqueConstraint(
+                Lower('name'),
+                name='unique_category_name_ci'
+            )
+        ]
 
     def __str__(self):
         return self.name
@@ -72,10 +79,6 @@ class Category(MPTTModel):
     def has_subcategories(self):
         """Проверяет, есть ли у категории подкатегории."""
         return self.subcategories.exists()
-
-    def clean(self):
-        if Category.objects.filter(name__iexact=self.name).exclude(id=self.id).exists():
-            raise ValidationError({'name': _('Категория с таким названием уже существует.')})
 
     def save(self, *args, **kwargs):
         if not self.slug:
