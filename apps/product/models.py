@@ -63,12 +63,6 @@ class Category(MPTTModel):
         verbose_name = "Категория"
         verbose_name_plural = "Категории"
         ordering = ['order']
-        constraints = [
-            UniqueConstraint(
-                Lower('name'),
-                name='unique_category_name_ci'
-            )
-        ]
 
     def __str__(self):
         return self.name
