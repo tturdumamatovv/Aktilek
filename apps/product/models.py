@@ -47,7 +47,7 @@ class Tag(models.Model):
 
 
 class Category(MPTTModel):
-    name = models.CharField(max_length=50, verbose_name=_('Название'), unique=True)
+    name = models.CharField(max_length=50, verbose_name=_('Название'))
     description = models.CharField(max_length=100, blank=True, verbose_name=_('Описание'))
     slug = models.SlugField(max_length=100, unique=True, verbose_name=_('Ссылка'), blank=True, null=True)
     image = models.FileField(upload_to='category_photos/', verbose_name=_('Фото'), blank=True, null=True)

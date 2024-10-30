@@ -88,15 +88,6 @@ class CategoryAdminForm(forms.ModelForm):
             if not cleaned_data.get(name_field):
                 self.add_error(name_field, _("This field is required."))
 
-            # Проверка на уникальность имени категории для текущего языка, исключая текущий объект
-            if cleaned_data.get(name_field):
-                existing_category = Category.objects.filter(**{name_field: cleaned_data[name_field]})
-                if self.instance.pk:
-                    existing_category = existing_category.exclude(pk=self.instance.pk)
-
-                if existing_category.exists():
-                    self.add_error(name_field, _("Категория с таким названием уже существует."))
-
         return cleaned_data
 
 class ColorAdminForm(forms.ModelForm):
