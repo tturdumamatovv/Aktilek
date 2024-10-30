@@ -122,17 +122,6 @@ class ProductAdmin(ModelAdmin, SortableAdminMixin, TabbedTranslationAdmin):
     exclude_base_fields = ('name', 'description')
     exclude = ('slug',)
 
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if db_field.name == "category":
-            # Получаем все категории с отступами
-            categories = Category.objects.all()
-            # Применяем отступы в зависимости от уровня категории
-            kwargs["queryset"] = categories
-            kwargs["widget"].choices = [
-                (category.pk, format_html('&nbsp;' * (category.level * 4) + str(category))) for category in categories
-            ]
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)
-
 
 @admin.register(Topping)
 class ToppingAdmin(ExcludeBaseFieldsMixin, TranslationAdmin):

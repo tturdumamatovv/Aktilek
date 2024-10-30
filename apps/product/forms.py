@@ -2,7 +2,9 @@ from django import forms
 
 from apps.pages.models import MethodsOfPayment
 from apps.product.models import ProductSize, Product, Category, Characteristic, Color, Tag
+
 from django.utils.translation import gettext_lazy as _
+from django.utils.html import format_html
 
 
 class ProductSizeForm(forms.ModelForm):
@@ -29,10 +31,15 @@ class ProductAdminForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Убираем фильтрацию категорий, чтобы отображать все доступные категории
         self.fields['category'].queryset = Category.objects.all()
+        self.fields['category'].label_from_instance = lambda obj: format_html(
+            '&nbsp;' * (obj.level * 4) + str(obj)
+        )
 
         if self.instance and self.instance.pk:
             # Исключаем текущий продукт из списка выбора похожих продуктов
             self.fields['similar_products'].queryset = Product.objects.exclude(pk=self.instance.pk)
+
+
 
     def clean(self):
         cleaned_data = super().clean()
