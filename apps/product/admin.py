@@ -62,9 +62,17 @@ class ProductImageInline(TabularInline):
 @admin.register(Color)
 class ColorAdmin(ExcludeBaseFieldsMixin, TabbedTranslationAdmin):
     form = ColorAdminForm
-    list_display = ('name', 'hex_code')
+    list_display = ('name', 'hex_code', 'color_display')
     search_fields = ('name',)
     exclude_base_fields = ('name',)
+
+    def color_display(self, obj):
+        return format_html(
+            '<div style="width: 20px; height: 20px; background-color: {}; border-radius: 50%;"></div>',
+            obj.hex_code
+        )
+
+    color_display.short_description = 'Цвет'
 
 
 @admin.register(Tag)
