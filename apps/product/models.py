@@ -28,8 +28,6 @@ class Size(models.Model):
         return self.name
 
     def save(self, *args, **kwargs):
-        # Normalize the name to lowercase to ensure uniqueness
-        self.name = self.name.lower()
         super().save(*args, **kwargs)
 
 
@@ -205,7 +203,7 @@ class SizeChart(models.Model):
 
 
 class Color(models.Model):
-    name = models.CharField(max_length=50, verbose_name=_('Цвет'), unique=True)
+    name = models.CharField(max_length=50, verbose_name=_('Цвет'))
     hex_code = ColorField(default='#FFFFFF', format='hex', verbose_name=_('HEX Код'))
 
     class Meta:
@@ -213,8 +211,6 @@ class Color(models.Model):
         verbose_name_plural = "Цвета"
 
     def save(self, *args, **kwargs):
-        # Normalize the name to lowercase to ensure uniqueness
-        self.name = self.name.lower()
         super().save(*args, **kwargs)
 
     def __str__(self):

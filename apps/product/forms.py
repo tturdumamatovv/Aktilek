@@ -1,10 +1,11 @@
 from django import forms
 
 from apps.pages.models import MethodsOfPayment
-from apps.product.models import ProductSize, Product, Category, Characteristic, Color, Tag
+from apps.product.models import ProductSize, Product, Category, Characteristic, Color, Tag, ProductImage
 
 from django.utils.translation import gettext_lazy as _
 from django.utils.html import format_html
+from django.core.exceptions import ValidationError
 
 
 class ProductSizeForm(forms.ModelForm):
@@ -153,3 +154,36 @@ class MethodsOfPaymentAdminForm(forms.ModelForm):
                 self.add_error(description_field, _("This field is required."))
 
         return cleaned_data
+
+
+class ProductImageInlineForm(forms.ModelForm):
+    class Meta:
+        model = ProductImage
+        fields = ('product', 'image', 'color')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Filter the color field choices based on the related product if it exists
+        if self.instance and self.instance.product:
+            self.fields['color'].queryset = Color.objects.filter(
+                product_colors__product=self.instance.product
+            ).distinct()
+
+    def clean_color(self):
+        color = self.cleaned_data.get('color')
+        product = self.instance.product
+
+        if product:
+            # Fetch available colors for the product's variants dynamically
+            available_colors = Color.objects.filter(
+                product_colors__product=product
+            ).distinct()
+
+            # Check if the selected color is within the available colors
+            if color and color not in available_colors:
+                raise ValidationError(
+                    _("Цвет варианта и картинки должны быть одинаковыми.")
+                )
+
+        return color

@@ -22,7 +22,7 @@ from .models import (
     Gender, SizeChart
 )
 from .forms import ProductSizeForm, ProductAdminForm, CharacteristicInlineForm, CategoryAdminForm, ColorAdminForm, \
-    TagAdminForm
+    TagAdminForm, ProductImageInlineForm
 
 
 class ExcludeBaseFieldsMixin(ModelAdmin):
@@ -55,6 +55,7 @@ class ProductImageAdmin(ExcludeBaseFieldsMixin):
 
 class ProductImageInline(TabularInline):
     model = ProductImage
+    form = ProductImageInlineForm
     extra = 0
     fields = ('product', 'image', 'color')
 
@@ -62,15 +63,16 @@ class ProductImageInline(TabularInline):
 @admin.register(Color)
 class ColorAdmin(ExcludeBaseFieldsMixin, TabbedTranslationAdmin):
     form = ColorAdminForm
-    list_display = ('name', 'hex_code', 'color_display')
+    list_display = ('name', 'color_display', 'hex_code')
     search_fields = ('name',)
     exclude_base_fields = ('name',)
 
     def color_display(self, obj):
         return format_html(
-            '<div style="width: 20px; height: 20px; background-color: {}; border-radius: 50%;"></div>',
+            '<div style="width: 200px; height: 20px; background-color: {}; border-radius: 10px;"></div>',
             obj.hex_code
         )
+
 
     color_display.short_description = 'Цвет'
 
