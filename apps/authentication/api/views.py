@@ -62,7 +62,7 @@ class UserLoginView(generics.CreateAPIView):
 
         response_data = {
             'message': 'Confirmation code sent successfully.',
-            'code': confirmation_code
+            # 'code': confirmation_code
         }
         return Response(response_data, status=status.HTTP_200_OK)
 
@@ -78,14 +78,14 @@ class VerifyCodeView(generics.CreateAPIView):
         receive_notifications = serializer.validated_data.get('receive_notifications')
 
         # Захардкоженный код и номер телефона
-        hardcoded_code = '1234'
-        hardcoded_phone_number = '+996123456789'
+        # hardcoded_code = '1234'
+        # hardcoded_phone_number = '+996123456789'
 
         # Ищем пользователя по коду
         user = User.objects.filter(code=code).first()
 
-        if code == hardcoded_code:
-            user = User.objects.filter(phone_number=hardcoded_phone_number).first()
+        # if code == hardcoded_code:
+        #     user = User.objects.filter(phone_number=hardcoded_phone_number).first()
 
         if not user:
             return Response({'error': 'Invalid code.'}, status=status.HTTP_400_BAD_REQUEST)
