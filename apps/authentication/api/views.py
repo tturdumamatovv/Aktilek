@@ -62,7 +62,7 @@ class UserLoginView(generics.CreateAPIView):
 
         response_data = {
             'message': 'Confirmation code sent successfully.',
-            # 'code': confirmation_code
+            'code': ''
         }
         return Response(response_data, status=status.HTTP_200_OK)
 
