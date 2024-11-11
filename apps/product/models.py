@@ -94,7 +94,7 @@ class Product(models.Model):
     is_popular = models.BooleanField(default=False, verbose_name=_('Популярный'))
     is_new = models.BooleanField(default=False, verbose_name=_('Новинка'))
     category = models.ForeignKey(Category, on_delete=models.CASCADE, verbose_name=_('Категория'),
-                                 related_name='products', blank=True, null=True)
+                                 related_name='products')
     name = models.CharField(max_length=100, verbose_name=_('Название'))
     meta_name = models.CharField(max_length=100, verbose_name=_('Мета Название'), null=True, blank=True)
     slug = models.SlugField(max_length=100, unique=True, verbose_name=_('Ссылка'), blank=True,
