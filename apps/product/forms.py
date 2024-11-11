@@ -22,18 +22,6 @@ class ProductSizeForm(forms.ModelForm):
         else:
             product = None
 
-    def clean(self):
-        cleaned_data = super().clean()
-        product = cleaned_data.get('product')
-        color = cleaned_data.get('color')
-
-        if product and color:
-            # Проверка наличия хотя бы одного изображения для данного цвета
-            if not ProductImage.objects.filter(product=product, color=color).exists():
-                self.add_error('color', _("Для каждого цвета должен быть загружен хотя бы один изображение."))
-
-        return cleaned_data
-
 
 class ProductAdminForm(forms.ModelForm):
     class Meta:
@@ -57,15 +45,26 @@ class ProductAdminForm(forms.ModelForm):
         product = self.instance
 
         # Проверка наличия вариантов продукта
-        if product and not product.product_sizes.exists():
+        if not product.product_sizes.exists():
             raise ValidationError(_("Необходимо создать хотя бы один вариант для продукта."))
 
         # Проверка изображений для каждого цвета в вариантах продукта
+        color_images = {}  # словарь для хранения цветов и их изображений
+
+        for image in product.productimage_set.all():
+            color = image.color
+            if color:
+                if color in color_images:
+                    color_images[color].append(image)
+                else:
+                    color_images[color] = [image]
+
         for product_size in product.product_sizes.all():
-            if not ProductImage.objects.filter(product=product, color=product_size.color).exists():
+            color = product_size.color
+            if color not in color_images:
                 raise ValidationError(
                     _("Для цвета %(color)s в варианте продукта должно быть загружено хотя бы одно изображение."),
-                    params={'color': product_size.color}
+                    params={'color': color}
                 )
 
         return cleaned_data
