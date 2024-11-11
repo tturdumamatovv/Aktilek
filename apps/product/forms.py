@@ -22,6 +22,16 @@ class ProductSizeForm(forms.ModelForm):
         else:
             product = None
 
+    def clean(self):
+        cleaned_data = super().clean()
+        product = cleaned_data.get('product')
+
+        # Check if the product has associated images
+        if product and not ProductImage.objects.filter(product=product).exists():
+            raise forms.ValidationError("Each product size must have at least one associated image.")
+
+        return cleaned_data
+
 
 class ProductAdminForm(forms.ModelForm):
     class Meta:
