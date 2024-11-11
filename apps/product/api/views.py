@@ -1,3 +1,5 @@
+from itertools import product
+
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, status, permissions
 from rest_framework.exceptions import NotFound
@@ -124,7 +126,7 @@ class ProductListByCategorySlugView(generics.ListAPIView):
         all_categories = list(category.subcategories.all()) + [category]
 
         # Получаем все продукты из основной категории и подкатегорий
-        queryset = Product.objects.filter(category__in=all_categories, is_active=True).annotate(
+        queryset = Product.objects.filter(category__in=all_categories, is_active=True, product_sizes__isnull=False).annotate(
             average_rating=Avg('product_reviews__rating'),
             final_price=ExpressionWrapper(
                 F('price') - F('discounted_price'), output_field=DecimalField(max_digits=10, decimal_places=2)
