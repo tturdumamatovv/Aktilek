@@ -115,23 +115,29 @@ class ProductListByCategorySlugView(generics.ListAPIView):
     def get_queryset(self):
         slug = self.kwargs['slug']
         try:
-            # Получаем категорию по slug
+            # Fetch category by slug
             category = Category.objects.get(slug=slug)
         except Category.DoesNotExist:
             raise NotFound("Категория не найдена")
 
-        # Получаем все подкатегории, включая основную категорию
+        # Include main category and its subcategories
         all_categories = list(category.subcategories.all()) + [category]
 
-        # Получаем все продукты из основной категории и подкатегорий
-        queryset = Product.objects.filter(category__in=all_categories, is_active=True).annotate(
+        # Filter products with at least one variant (ProductSize)
+        queryset = Product.objects.filter(
+            category__in=all_categories,
+            is_active=True
+        ).annotate(
+            variant_count=Count('product_sizes')  # Count the variants
+        ).filter(
+            variant_count__gt=0  # Only products with at least one variant
+        ).annotate(
             average_rating=Avg('product_reviews__rating'),
             final_price=ExpressionWrapper(
                 F('price') - F('discounted_price'), output_field=DecimalField(max_digits=10, decimal_places=2)
             )
         )
 
-        # Применяем сортировку
         return queryset
 
     def get(self, request, *args, **kwargs):
