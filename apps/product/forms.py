@@ -40,36 +40,6 @@ class ProductAdminForm(forms.ModelForm):
             # Исключаем текущий продукт из списка выбора похожих продуктов
             self.fields['similar_products'].queryset = Product.objects.exclude(pk=self.instance.pk)
 
-    def clean(self):
-        cleaned_data = super().clean()
-        product = self.instance
-
-        # Проверка наличия вариантов продукта
-        if not product.product_sizes.exists():
-            raise ValidationError(_("Необходимо создать хотя бы один вариант для продукта."))
-
-        # Проверка изображений для каждого цвета в вариантах продукта
-        color_images = {}  # словарь для хранения цветов и их изображений
-
-        for image in product.productimage_set.all():
-            color = image.color
-            if color:
-                if color in color_images:
-                    color_images[color].append(image)
-                else:
-                    color_images[color] = [image]
-
-        for product_size in product.product_sizes.all():
-            color = product_size.color
-            if color not in color_images:
-                raise ValidationError(
-                    _("Для цвета %(color)s в варианте продукта должно быть загружено хотя бы одно изображение."),
-                    params={'color': color}
-                )
-
-        return cleaned_data
-
-
 
     def clean(self):
         cleaned_data = super().clean()
@@ -198,21 +168,3 @@ class ProductImageInlineForm(forms.ModelForm):
             self.fields['color'].queryset = Color.objects.filter(
                 product_colors__product=self.instance.product
             ).distinct()
-
-    def clean_color(self):
-        color = self.cleaned_data.get('color')
-        product = self.instance.product
-
-        if product:
-            # Fetch available colors for the product's variants dynamically
-            available_colors = Color.objects.filter(
-                product_colors__product=product
-            ).distinct()
-
-            # Check if the selected color is within the available colors
-            if color and color not in available_colors:
-                raise ValidationError(
-                    _("Цвет варианта и картинки должны быть одинаковыми.")
-                )
-
-        return color

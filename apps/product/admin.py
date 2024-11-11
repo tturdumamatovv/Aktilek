@@ -23,6 +23,7 @@ from .models import (
 )
 from .forms import ProductSizeForm, ProductAdminForm, CharacteristicInlineForm, CategoryAdminForm, ColorAdminForm, \
     TagAdminForm, ProductImageInlineForm
+from .signals import validate_product_images
 
 
 class ExcludeBaseFieldsMixin(ModelAdmin):
@@ -131,6 +132,15 @@ class ProductAdmin(ModelAdmin, SortableAdminMixin, TabbedTranslationAdmin):
     inlines = [ProductSizeInline, ProductImageInline, CharacteristicInline, ReviewInline]
     exclude_base_fields = ('name', 'description')
     exclude = ('slug',)
+
+    def save_model(self, request, obj, form, change):
+        obj.save()  # Промежуточное сохранение для получения ID продукта
+
+    def save_related(self, request, form, formsets, change):
+        super().save_related(request, form, formsets, change)
+
+        # Вызов валидации после полного сохранения всех инлайнов
+        validate_product_images(Product, instance=form.instance)
 
 
 @admin.register(Topping)
