@@ -1,10 +1,12 @@
 from adminsortable2.admin import SortableAdminMixin
-from django.contrib import admin
+from django.contrib import admin, messages
 from modeltranslation.admin import TranslationAdmin
 from unfold.admin import TabularInline, ModelAdmin
 
 from mptt.admin import DraggableMPTTAdmin
 from django.utils.html import format_html
+from django.db import transaction
+from django.utils.translation import gettext_lazy as _
 from modeltranslation.admin import TabbedTranslationAdmin, TranslationTabularInline
 
 from .models import (
@@ -23,7 +25,6 @@ from .models import (
 )
 from .forms import ProductSizeForm, ProductAdminForm, CharacteristicInlineForm, CategoryAdminForm, ColorAdminForm, \
     TagAdminForm, ProductImageInlineForm
-from .signals import validate_product_images
 
 
 class ExcludeBaseFieldsMixin(ModelAdmin):
@@ -133,14 +134,39 @@ class ProductAdmin(ModelAdmin, SortableAdminMixin, TabbedTranslationAdmin):
     exclude_base_fields = ('name', 'description')
     exclude = ('slug',)
 
-    def save_model(self, request, obj, form, change):
-        obj.save()  # Промежуточное сохранение для получения ID продукта
-
     def save_related(self, request, form, formsets, change):
-        super().save_related(request, form, formsets, change)
+        # Сохраняем все объекты в транзакции, чтобы можно было отменить при необходимости
+        with transaction.atomic():
+            super().save_related(request, form, formsets, change)
 
-        # Вызов валидации после полного сохранения всех инлайнов
-        validate_product_images(Product, instance=form.instance)
+            product = form.instance
+
+            # Проверка наличия изображений для каждого цвета в вариантах продукта
+            color_images = {}
+            for image in product.product_images.all():
+                color = image.color
+                if color:
+                    if color in color_images:
+                        color_images[color].append(image)
+                    else:
+                        color_images[color] = [image]
+
+            missing_images = []
+            for product_size in product.product_sizes.all():
+                color = product_size.color
+                if color not in color_images:
+                    missing_images.append(color.name)
+
+            # Если есть цвета без изображений, показываем ошибку и отменяем транзакцию
+            if missing_images:
+                messages.error(
+                    request,
+                    _("Для следующих цветов должны быть загружены хотя бы одно изображение: %(colors)s.") % {
+                        'colors': ', '.join(missing_images)
+                    }
+                )
+                # Откатываем все сохраненные изменения
+                transaction.set_rollback(True)
 
 
 @admin.register(Topping)
