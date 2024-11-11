@@ -9,7 +9,6 @@ from django.core.files.base import ContentFile
 from django.db import models
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
-from django.core.exceptions import ValidationError
 
 from unidecode import unidecode
 
@@ -234,11 +233,6 @@ class ProductSize(models.Model):
     def __str__(self):
         return f"{self.product.name}"
 
-    def clean(self):
-        # Validate that at least one ProductImage exists for the associated product
-        if not ProductImage.objects.filter(product=self.product).exists():
-            raise ValidationError(_("У продукт варианта должна быть фотография."))
-
     def save(self, *args, **kwargs):
         # Проверяем, если цена не указана, берем из продукта
         if self.price is None:
@@ -247,8 +241,6 @@ class ProductSize(models.Model):
             self.discounted_price = self.product.discounted_price
         if self.bonus_price is None:
             self.bonus_price = self.product.bonus_price
-
-        self.clean()
 
         # Вызов родительского метода save
         super().save(*args, **kwargs)
