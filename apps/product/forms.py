@@ -28,7 +28,7 @@ class ProductSizeForm(forms.ModelForm):
 
         # Check if the product has associated images
         if product and not ProductImage.objects.filter(product=product).exists():
-            raise forms.ValidationError("Each product size must have at least one associated image.")
+            raise forms.ValidationError("У продукт варианта должна быть фотография.")
 
         return cleaned_data
 
