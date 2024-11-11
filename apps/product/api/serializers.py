@@ -274,7 +274,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     country = CountrySerializer(read_only=True)
     is_ordered = serializers.SerializerMethodField()
     is_active = serializers.BooleanField()
-    images = ProductImageSerializer(many=True, read_only=True)
+    images = ProductImageSerializer(soource='product_images' ,many=True, read_only=True)
     similar_products = serializers.SerializerMethodField()
     size_chart = serializers.SerializerMethodField()
 
