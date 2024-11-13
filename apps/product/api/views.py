@@ -3,7 +3,7 @@ from itertools import product
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, status, permissions
 from rest_framework.exceptions import NotFound
-from django.db.models import Avg, F, ExpressionWrapper, DecimalField
+from django.db.models import Avg, F, ExpressionWrapper, DecimalField, Q
 from django.shortcuts import get_object_or_404
 
 from rest_framework.response import Response
