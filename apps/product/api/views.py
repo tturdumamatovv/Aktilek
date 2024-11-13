@@ -52,6 +52,10 @@ class ProductSearchView(generics.ListAPIView):
         if name:
             queryset = queryset.filter(name__icontains=name)  # Фильтруем по имени
 
+        article = self.request.query_params.get('article')
+        if article:
+            queryset = queryset.filter(article=article)
+
         return queryset
 
 

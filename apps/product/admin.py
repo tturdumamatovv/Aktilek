@@ -133,6 +133,7 @@ class ProductAdmin(ModelAdmin, SortableAdminMixin, TabbedTranslationAdmin):
     inlines = [ProductSizeInline, ProductImageInline, CharacteristicInline, ReviewInline]
     exclude_base_fields = ('name', 'description')
     exclude = ('slug',)
+    readonly_fields = ('article',)
 
     def save_related(self, request, form, formsets, change):
         # Сохраняем все объекты в транзакции, чтобы можно было отменить при необходимости

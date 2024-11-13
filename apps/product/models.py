@@ -1,4 +1,6 @@
 import os
+import random
+
 from io import BytesIO
 
 from mptt.models import MPTTModel, TreeForeignKey
@@ -116,6 +118,7 @@ class Product(models.Model):
     similar_products = models.ManyToManyField('self', blank=True, symmetrical=False, verbose_name=_('Похожие продукты'))
     datetime = models.DateTimeField(auto_now_add=True, verbose_name=_("Дата добавления"))
     views_count = models.PositiveIntegerField(default=0, verbose_name=_('Количество просмотров'))
+    article = models.CharField(max_length=9, verbose_name=_('Артикул'), blank=True)
 
     class Meta:
         verbose_name = "Продукт"
@@ -172,7 +175,16 @@ class Product(models.Model):
             if os.path.isfile(old_path):
                 os.remove(old_path)
 
+    def generate_unique_article(self):
+        """Generates a unique 9-digit article number for the product."""
+        while True:
+            article = ''.join(random.choices('0123456789', k=9))
+            if not Product.objects.filter(article=article).exists():
+                return article
+
     def save(self, *args, **kwargs):
+        if not self.article:
+            self.article = self.generate_unique_article()
         # Генерация slug только если он не задан
         if not self.slug:
             base_slug = slugify(unidecode(self.name))

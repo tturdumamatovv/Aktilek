@@ -26,7 +26,7 @@ class OrderItemInline(TabularInline):
             return format_html('<img src="{}" style="width: 50px; height: auto;" />', obj.product_size.product.photo.url)
         return "Нету фотографии"
 
-    product_image.short_description = "Product Image"
+    product_image.short_description = "Изображение продукта"
     list_per_page = 10
 
     def display_size_name(self, obj):
