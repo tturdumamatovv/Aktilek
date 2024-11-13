@@ -19,7 +19,15 @@ class OrderItemInline(TabularInline):
     model = OrderItem
     extra = 0
     exclude = ['size_id', 'color_id']
-    readonly_fields = ['product_size', 'size_name', 'color_name', 'quantity', 'total_amount', 'is_bonus']
+    readonly_fields = ['product_image', 'product_size', 'size_name', 'color_name', 'quantity', 'total_amount', 'is_bonus']
+
+    def product_image(self, obj):
+        if obj.product_size and obj.product_size.product.photo:
+            return format_html('<img src="{}" style="width: 50px; height: auto;" />', obj.product_size.product.photo.url)
+        return "Нету фотографии"
+
+    product_image.short_description = "Product Image"
+    list_per_page = 10
 
     def display_size_name(self, obj):
         return obj.size_name if obj.size_name else "Размер не указан"
