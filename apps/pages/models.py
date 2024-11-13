@@ -284,7 +284,7 @@ class PaymentMethod(models.Model):
 
 class Stories(models.Model):
     title = models.CharField(verbose_name="Заголовок", max_length=123, blank=True, null=True)
-    image = models.ImageField(verbose_name="Изображение", upload_to="images/stories", blank=True, null=True)
+    image = models.ImageField(verbose_name="Изображение", upload_to="images/stories")
     is_active = models.BooleanField(verbose_name="Активный", default=True)
 
     def __str__(self):
@@ -297,7 +297,7 @@ class Stories(models.Model):
 
 class Story(models.Model):
     stories = models.ForeignKey(Stories, on_delete=models.CASCADE, related_name='stories')
-    image = models.ImageField(verbose_name="Изображение", upload_to="images/stories", blank=True, null=True)
+    image = models.ImageField(verbose_name="Изображение", upload_to="images/stories")
     TYPE_CHOICES = (
         ('category', 'Категория'),
         ('product', 'Продукт'),

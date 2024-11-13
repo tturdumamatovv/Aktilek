@@ -1,9 +1,11 @@
 from django.contrib import admin
+from django.contrib import messages
 from django.utils.html import format_html
+from django.core.exceptions import ValidationError
 from unfold.admin import ModelAdmin, TabularInline, StackedInline
 from modeltranslation.admin import TabbedTranslationAdmin
 
-from apps.pages.forms import StaticPageAdminForm
+from apps.pages.forms import StaticPageAdminForm, StoryInlineFormSet
 from apps.pages.models import (
     Banner,
     Phone,
@@ -133,6 +135,7 @@ class MainPageAdmin(ModelAdmin):
 class StoryInline(TabularInline):
     extra = 0
     model = Story
+    formset = StoryInlineFormSet
 
 
 @admin.register(Stories)
