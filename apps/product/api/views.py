@@ -38,23 +38,15 @@ class ProductSearchView(generics.ListAPIView):
     filterset_class = ProductFilter
 
     def get_queryset(self):
-        # Получаем базовый queryset только активных продуктов
-        queryset = Product.objects.filter(is_active=True)
+        # Base queryset for active products with available stock
+        queryset = Product.objects.filter(is_active=True, product_sizes__quantity__gt=0).distinct()
 
-        # Убедимся, что у продукта есть хотя бы один product_size с количеством больше 0
-        queryset = queryset.filter(
-            product_sizes__isnull=False,  # Убедимся, что у продукта есть хотя бы один product_size
-            product_sizes__quantity__gt=0  # Проверим, что хотя бы один product_size имеет количество больше 0
-        ).distinct()  # distinct() для исключения дубликатов
-
-        # Фильтруем по имени, если оно передано в запросе
-        name = self.request.query_params.get('name')
-        if name:
-            queryset = queryset.filter(name__icontains=name)  # Фильтруем по имени
-
-        article = self.request.query_params.get('article')
-        if article:
-            queryset = queryset.filter(article=article)
+        # Search by name or article
+        name_or_article = self.request.query_params.get('name')
+        if name_or_article:
+            queryset = queryset.filter(
+                Q(name__icontains=name_or_article) | Q(article__icontains=name_or_article)
+            )
 
         return queryset
 
