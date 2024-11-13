@@ -9,7 +9,7 @@ from django.db.models import Q, Avg
 
 class ProductFilter(django_filters.FilterSet):
     id = django_filters.CharFilter(field_name='id')
-    name = django_filters.CharFilter(field_name='name', lookup_expr='icontains')
+    name = django_filters.CharFilter(method='filter_by_name_or_article')
     article = django_filters.CharFilter(field_name='article', lookup_expr='exact')
     country = django_filters.CharFilter(field_name='country__name', lookup_expr='icontains')
     category = django_filters.CharFilter(method='filter_final_category')
@@ -33,7 +33,11 @@ class ProductFilter(django_filters.FilterSet):
 
     class Meta:
         model = Product
-        fields = ['id', 'name', 'article', 'country', 'category', 'gender', 'size', 'color', 'price_min', 'price_max', 'rating_min']
+        fields = ['id', 'name', 'country', 'category', 'gender', 'size', 'color', 'price_min', 'price_max', 'rating_min']
+
+    def filter_by_name_or_article(self, queryset, name, value):
+        # Filter by either product name or article field
+        return queryset.filter(Q(name__icontains=value) | Q(article__icontains=value))
 
     def filter_final_category(self, queryset, name, value):
         return queryset.filter(category__name=value, category__subcategories__isnull=True)
