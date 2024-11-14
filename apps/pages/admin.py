@@ -3,8 +3,7 @@ from django.contrib import messages
 from django.utils.html import format_html
 from django.core.exceptions import ValidationError
 from unfold.admin import ModelAdmin, TabularInline, StackedInline
-from modeltranslation.admin import TabbedTranslationAdmin, TranslationTabularInline
-
+from modeltranslation.admin import TabbedTranslationAdmin
 
 from apps.pages.forms import StaticPageAdminForm, StoryInlineFormSet
 from apps.pages.models import (
@@ -122,7 +121,7 @@ class MethodsOfPaymentAdmin(ModelAdmin, TabbedTranslationAdmin):
     exclude = ('online_payment',)
 
 
-class RedirectionInline(StackedInline, TranslationTabularInline):
+class RedirectionInline(StackedInline):
     model = Redirection
     extra = 0
     exclude = ('title', 'description')
