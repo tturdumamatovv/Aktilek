@@ -216,7 +216,7 @@ class CreateOrderView(generics.CreateAPIView):
             'pg_result_url': 'https://ak-tilek.kg/ru/',
             'pg_success_url': 'https://ak-tilek.kg/ru/success/',
             'pg_failure_url': 'https://ak-tilek.kg/ru/failure/',
-            'pg_testing_mode': 1,
+            'pg_testing_mode': 0,
             'pg_salt': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         }
 
