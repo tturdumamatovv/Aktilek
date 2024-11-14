@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 from unfold.admin import ModelAdmin, TabularInline, StackedInline
 from modeltranslation.admin import TabbedTranslationAdmin, TranslationTabularInline
 
+
 from apps.pages.forms import StaticPageAdminForm, StoryInlineFormSet
 from apps.pages.models import (
     Banner,
