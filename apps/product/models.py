@@ -109,7 +109,7 @@ class Product(models.Model):
     bonuses = models.BooleanField(default=False, verbose_name=_('Можно оптатить бонусами'))
     tags = models.ManyToManyField('Tag', related_name='products', verbose_name=_('Теги'), blank=True)
     order = models.PositiveIntegerField(default=0, editable=False, db_index=True)
-    gender = models.ForeignKey('Gender', related_name='products', verbose_name=_('Пол'), on_delete=models.CASCADE)
+    gender = models.ForeignKey('Gender', related_name='products', verbose_name=_('Пол'), on_delete=models.CASCADE, null=True, blank=True)
     size_chart = models.ForeignKey('SizeChart', related_name='products', verbose_name=_('Размерная Сетка'), on_delete=models.CASCADE, blank=True, null=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name=_('Цена'))
     discounted_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name=_('Цена со скидкой'),
