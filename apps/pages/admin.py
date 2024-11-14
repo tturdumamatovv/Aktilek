@@ -93,15 +93,15 @@ class PaymentMethodLinkInline(TabularInline):
     extra = 0
 
 
-class AddressInline(TabularInline):
-    model = Address
-    extra = 0
+# class AddressInline(TabularInline):
+#     model = Address
+#     extra = 0
 
 
 @admin.register(Contacts)
 class ContactsAdmin(ModelAdmin):
     pass
-    inlines = [PhoneInline, EmailInline, SocialLinkInline, PaymentMethodLinkInline, AddressInline]
+    inlines = [PhoneInline, EmailInline, SocialLinkInline, PaymentMethodLinkInline] #,  AddressInline]
 
 
 class OrderTypesInline(TabularInline):
@@ -117,7 +117,8 @@ class DeliveryConditionsInline(TabularInline):
 @admin.register(MethodsOfPayment)
 class MethodsOfPaymentAdmin(ModelAdmin, TabbedTranslationAdmin):
     form = MethodsOfPaymentAdminForm
-    list_display = ('title', 'description', 'online_payment')
+    list_display = ('title', 'description')
+    exclude = ('online_payment',)
 
 
 class RedirectionInline(StackedInline):
@@ -128,8 +129,9 @@ class RedirectionInline(StackedInline):
 
 @admin.register(MainPage)
 class MainPageAdmin(ModelAdmin):
-    list_display = ('phone', 'icon', 'meta_title', 'meta_description', 'meta_image')
+    list_display = ('icon', 'meta_title', 'meta_description', 'meta_image')
     inlines = [RedirectionInline]
+    exclude = ('phone',)
 
 
 class StoryInline(TabularInline):
