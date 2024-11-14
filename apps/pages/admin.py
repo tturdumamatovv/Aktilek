@@ -129,7 +129,7 @@ class RedirectionInline(StackedInline):
 
 @admin.register(MainPage)
 class MainPageAdmin(ModelAdmin):
-    list_display = ('icon', 'meta_title', 'meta_description', 'meta_image')
+    list_display = ('meta_title', 'meta_description')
     inlines = [RedirectionInline]
     exclude = ('phone',)
 
