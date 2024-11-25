@@ -46,6 +46,7 @@ class OrderAdmin(ModelAdmin):
         'order_read_status', 'id', 'order_time', 'total_amount', 'link_to_user', 'order_status', 'is_pickup',
     )
     search_fields = ('user__phone_number',)
+    ordering = ('-order_time',)
     list_filter = ('order_time', 'order_status', 'is_pickup', 'is_read')
     list_display_links = ('id',)
     list_editable = ('order_status',)
@@ -103,7 +104,9 @@ class ReportAdmin(ModelAdmin):
 class PromoCodeAdmin(ModelAdmin):
     list_display = ['code', 'discount', 'valid_from', 'valid_to', 'active', 'type']
     list_filter = ['active', 'valid_from', 'valid_to']
+    ordering = ('active',)
     search_fields = ['code']
+    list_per_page = 10
 
 
 @admin.register(Warehouse)
@@ -114,3 +117,5 @@ class WarehouseAdmin(ModelAdmin):
     exclude = ['apartment_number', 'entrance', 'floor',
                'intercom', 'latitude', 'is_primary', 'longitude',
                'comment']
+    list_per_page = 10
+    ordering = ('city',)

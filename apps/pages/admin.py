@@ -35,7 +35,9 @@ from apps.services.firebase_notification import send_firebase_notification
 class BannerAdmin(ModelAdmin):
     list_display = ["title", "type", 'object_link', "is_active", "created_at"]
     list_filter = ["title", "is_active", "created_at"]
+    ordering = ('title',)
     search_fields = ["title", "link", "created_at"]
+    list_per_page = 10
     date_hierarchy = "created_at"
     fields = (
         "type",
@@ -71,6 +73,9 @@ class BannerAdmin(ModelAdmin):
 @admin.register(StaticPage)
 class StaticPageAdmin(ModelAdmin, TabbedTranslationAdmin):
     form = StaticPageAdminForm
+    list_display = ('title',)
+    list_per_page = 10
+    ordering = ('title',)
 
 
 class PhoneInline(TabularInline):
@@ -143,6 +148,9 @@ class StoryInline(TabularInline):
 @admin.register(Stories)
 class StoriesAdmin(ModelAdmin):
     inlines = [StoryInline]
+    list_display = ('title',)
+    ordering = ('title',)
+    list_per_page = 10
 
 
 @admin.register(SiteSettings)

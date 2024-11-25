@@ -40,7 +40,9 @@ class OrderInline(TabularInline):
 
 @admin.register(UserAddress)
 class UserAddressAdmin(ModelAdmin):
-    pass
+    list_display = ('city',)
+    list_per_page = 10
+    ordering = ('city',)
 
 
 class UserAddressInline(StackedInline):
@@ -54,8 +56,8 @@ class UserAdmin(ModelAdmin):
     add_form = CustomUserCreationForm  # Используем форму для создания пользователя
     form = CustomUserChangeForm  # Используем форму для редактирования пользователя
 
-    list_display = ('phone_number', 'full_name', 'is_staff', 'is_superuser')
-    list_filter = ('is_staff', 'is_superuser',)
+    list_display = ('phone_number', 'full_name', 'is_staff', 'is_superuser', 'is_active')
+    list_filter = ('is_staff', 'is_superuser', 'is_active')
 
     fieldsets = (
         (None, {'fields': ('phone_number', 'full_name', 'password')}),
@@ -77,7 +79,8 @@ class UserAdmin(ModelAdmin):
     search_fields = ('phone_number', 'full_name')
     ordering = ('phone_number',)
     filter_horizontal = ('groups', 'user_permissions')
-    list_editable = ('is_staff', 'is_superuser')
+    list_editable = ('is_staff', 'is_superuser', 'is_active')
+    list_per_page = 10
 
     def get_form(self, request, obj=None, **kwargs):
         """

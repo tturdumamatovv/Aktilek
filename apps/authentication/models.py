@@ -35,6 +35,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     phone_number = models.CharField(max_length=13, unique=True, verbose_name=_('Номер телефона'))
     code = models.CharField(max_length=4, blank=True, null=True, verbose_name=_('Код'))
     is_staff = models.BooleanField(default=False, verbose_name=_('Работник'))
+    is_active = models.BooleanField(default=True, verbose_name=_('Активен'))
     profile_picture = models.ImageField(upload_to='profile_pictures/', blank=True, null=True, max_length=255,
                                         verbose_name=_('Изображение профиля'))
     full_name = models.CharField(max_length=255, blank=True, verbose_name=_('Полное имя'))
@@ -55,7 +56,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         return f"/admin/authentication/user/{self.id}/change/"
 
     def __str__(self):
-        return self.phone_number
+        return self.full_name if self.full_name else self.phone_number
 
     class Meta:
         verbose_name = _('Пользователь')

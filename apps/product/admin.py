@@ -1,5 +1,6 @@
 from adminsortable2.admin import SortableAdminMixin
 from django.contrib import admin, messages
+from django.contrib.admin import RelatedOnlyFieldListFilter
 from modeltranslation.admin import TranslationAdmin
 from unfold.admin import TabularInline, ModelAdmin
 
@@ -21,7 +22,8 @@ from .models import (
     Color,
     ProductImage,
     Country,
-    Gender, SizeChart
+    Gender,
+    SizeChart
 )
 from .forms import ProductSizeForm, ProductAdminForm, CharacteristicInlineForm, CategoryAdminForm, ColorAdminForm, \
     TagAdminForm, ProductImageInlineForm
@@ -41,13 +43,18 @@ class ExcludeBaseFieldsMixin(ModelAdmin):
 class SizeAdmin(ExcludeBaseFieldsMixin):
     list_display = ('name',)
     search_fields = ('name',)
+    ordering = ('name',)
+    list_per_page = 10
+
 
 
 @admin.register(Gender)
 class GenderAdmin(ExcludeBaseFieldsMixin):
     list_display = ('name',)
     search_fields = ('name',)
+    ordering = ('name',)
     exclude_base_fields = ('name',)
+    list_per_page = 10
 
 
 @admin.register(ProductImage)
@@ -67,7 +74,9 @@ class ColorAdmin(ExcludeBaseFieldsMixin, TabbedTranslationAdmin):
     form = ColorAdminForm
     list_display = ('name', 'color_display', 'hex_code')
     search_fields = ('name',)
+    ordering = ('name',)
     exclude_base_fields = ('name',)
+    list_per_page = 10
 
     def color_display(self, obj):
         return format_html(
@@ -84,7 +93,9 @@ class TagAdmin(ExcludeBaseFieldsMixin, TabbedTranslationAdmin):
     form = TagAdminForm
     list_display = ('name',)
     search_fields = ('name',)
+    ordering = ('name',)
     exclude_base_fields = ('name',)
+    list_per_page = 10
 
 
 class ProductSizeInline(TabularInline):
@@ -107,6 +118,7 @@ class ReviewInline(TabularInline):
 class CategoryAdmin(ModelAdmin, DraggableMPTTAdmin, TabbedTranslationAdmin):
     form = CategoryAdminForm
     search_fields = ('name',)
+    ordering = ('name',)
     exclude_base_fields = ('name', 'description')
     exclude = ('slug',)
 
@@ -128,12 +140,14 @@ class ProductAdmin(ModelAdmin, SortableAdminMixin, TabbedTranslationAdmin):
     form = ProductAdminForm
     list_display = ('order', 'name', 'category', 'description', 'is_active', 'datetime', 'created_by')
     search_fields = ('name',)
-    list_filter = ('category', 'created_by')
+    list_filter = ('category', ('created_by', RelatedOnlyFieldListFilter))
     filter_horizontal = ('tags', 'similar_products')  # 'ingredients')
     inlines = [ProductSizeInline, ProductImageInline, CharacteristicInline, ReviewInline]
     exclude_base_fields = ('name', 'description')
     exclude = ('slug',)
     readonly_fields = ('article', 'created_by')
+    list_per_page = 10
+    ordering = ('name', 'category')
 
     def save_model(self, request, obj, form, change):
         """Устанавливаем текущего пользователя как создателя продукта."""
@@ -192,10 +206,15 @@ class ToppingAdmin(ExcludeBaseFieldsMixin, TranslationAdmin):
 class SizeChartAdmin(ExcludeBaseFieldsMixin):
     list_display = ('name', 'image')
     search_fields = ('name',)
+    ordering = ('name',)
+    list_per_page = 10
 
 
 @admin.register(Country)
 class ToppingAdmin(ExcludeBaseFieldsMixin, TranslationAdmin):
     list_display = ('name', 'logo')
     search_fields = ('name',)
+    ordering = ('name',)
     exclude_base_fields = ('name',)
+    list_per_page = 10
+
