@@ -109,6 +109,7 @@ class PromoCodeAdmin(ModelAdmin):
     list_per_page = 10
 
 
+
 @admin.register(Warehouse)
 class WarehouseAdmin(ModelAdmin):
     list_display = ['city']
