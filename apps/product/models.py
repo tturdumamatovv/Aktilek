@@ -11,8 +11,6 @@ from django.core.files.base import ContentFile
 from django.db import models
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
-from django.db.models import UniqueConstraint
-from django.db.models.functions import Lower
 
 from unidecode import unidecode
 
@@ -119,6 +117,7 @@ class Product(models.Model):
     datetime = models.DateTimeField(auto_now_add=True, verbose_name=_("Дата добавления"))
     views_count = models.PositiveIntegerField(default=0, verbose_name=_('Количество просмотров'))
     article = models.CharField(max_length=9, verbose_name=_('Артикул'), blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, verbose_name=_("Создатель продукта"))
 
     class Meta:
         verbose_name = "Продукт"

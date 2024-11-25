@@ -126,14 +126,21 @@ class CategoryAdmin(ModelAdmin, DraggableMPTTAdmin, TabbedTranslationAdmin):
 @admin.register(Product)
 class ProductAdmin(ModelAdmin, SortableAdminMixin, TabbedTranslationAdmin):
     form = ProductAdminForm
-    list_display = ('order', 'name', 'category', 'description', 'is_active', 'datetime')
+    list_display = ('order', 'name', 'category', 'description', 'is_active', 'datetime', 'created_by')
     search_fields = ('name',)
-    list_filter = ('category',)
+    list_filter = ('category', 'created_by')
     filter_horizontal = ('tags', 'similar_products')  # 'ingredients')
     inlines = [ProductSizeInline, ProductImageInline, CharacteristicInline, ReviewInline]
     exclude_base_fields = ('name', 'description')
     exclude = ('slug',)
-    readonly_fields = ('article',)
+    readonly_fields = ('article', 'created_by')
+
+    def save_model(self, request, obj, form, change):
+        """Устанавливаем текущего пользователя как создателя продукта."""
+        if not obj.created_by:
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)
+
 
     def save_related(self, request, form, formsets, change):
         # Сохраняем все объекты в транзакции, чтобы можно было отменить при необходимости
@@ -141,6 +148,10 @@ class ProductAdmin(ModelAdmin, SortableAdminMixin, TabbedTranslationAdmin):
             super().save_related(request, form, formsets, change)
 
             product = form.instance
+
+            if not product.created_by:
+                product.created_by = request.user
+                product.save()
 
             # Проверка наличия изображений для каждого цвета в вариантах продукта
             color_images = {}
